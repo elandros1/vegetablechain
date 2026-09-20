@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#2e7d32" />
+  <title>番茄档案详情 - VegetableChain</title>
+  <link rel="stylesheet" href="./style.css" />
+</head>
+<body>
+  <nav class="navbar">
+    <div class="nav-inner">
+      <a class="nav-brand" href="./index.html"><span class="brand-logo">蔬</span> VegetableChain</a>
+      <button class="nav-toggle" onclick="document.getElementById('navlinks').classList.toggle('open')">☰</button>
+      <div class="nav-links" id="navlinks">
+        <a class="nav-link" href="./index.html">首页</a>
+        <a class="nav-link" href="./create.html">创建档案</a>
+        <a class="nav-link active" href="./detail.html">档案详情</a>
+        <a class="nav-link" href="./certificate.html">存证证书</a>
+        <a class="nav-link" href="./qrcode.html">二维码</a>
+        <a class="nav-link" href="./verify.html">验证</a>
+        <a class="nav-link" href="./tamper.html">篡改实验</a>
+      </div>
+    </div>
+  </nav>
+
+  <main class="page">
+    <div class="container">
+      <div class="flex between wrap items-center mb-2">
+        <div>
+          <h1 class="page-title">番茄档案详情</h1>
+          <p class="page-subtitle">蔬菜数字身份档案、哈希指纹、链上存证与数字签名信息。</p>
+        </div>
+        <span class="tag tag-warning">模拟实验数据</span>
+      </div>
+
+      <!-- 番茄档案 -->
+      <h2 class="section-title">蔬菜档案</h2>
+      <div class="card">
+        <div class="card-header"><span class="ch-icon">🍅</span><h3>农场与采收信息</h3></div>
+        <div class="card-body">
+          <div class="data-row"><div class="data-label">蔬菜类型</div><div class="data-value" id="d-vegetableType">—</div></div>
+          <div class="data-row"><div class="data-label">品种</div><div class="data-value" id="d-variety">—</div></div>
+          <div class="data-row"><div class="data-label">蔬菜 ID</div><div class="data-value mono" id="d-vegetableId">—</div></div>
+          <div class="data-row"><div class="data-label">批次编号</div><div class="data-value" id="d-batchNumber">—</div></div>
+          <div class="data-row"><div class="data-label">种植基地</div><div class="data-value" id="d-plantingBase">—</div></div>
+          <div class="data-row"><div class="data-label">种植地点</div><div class="data-value" id="d-location">—</div></div>
+          <div class="data-row"><div class="data-label">播种日期</div><div class="data-value" id="d-sowingDate">—</div></div>
+          <div class="data-row"><div class="data-label">移栽日期</div><div class="data-value" id="d-transplantingDate">—</div></div>
+          <div class="data-row"><div class="data-label">采摘日期</div><div class="data-value" id="d-harvestDate">—</div></div>
+          <div class="data-row"><div class="data-label">种植方式</div><div class="data-value" id="d-plantingMethod">—</div></div>
+          <div class="data-row"><div class="data-label">灌溉方式</div><div class="data-value" id="d-irrigationMethod">—</div></div>
+          <div class="data-row"><div class="data-label">种植面积</div><div class="data-value" id="d-plantingArea">—</div></div>
+          <div class="data-row"><div class="data-label">采收重量</div><div class="data-value" id="d-harvestWeight">—</div></div>
+          <div class="data-row"><div class="data-label">质量检测</div><div class="data-value" id="d-qualityTest">—</div></div>
+        </div>
+      </div>
+
+      <!-- 哈希指纹 -->
+      <h2 class="section-title">数据哈希指纹</h2>
+      <div class="grid grid-2">
+        <div class="card">
+          <div class="card-header"><span class="ch-icon">#</span><h3>SHA-256</h3></div>
+          <div class="card-body">
+            <div class="text-small text-muted mb-1">国际通用哈希，链上存证指纹。</div>
+            <div class="hash-box dark mono" id="d-sha256">—</div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-header"><span class="ch-icon">国</span><h3>SM3（国密）</h3></div>
+          <div class="card-body">
+            <div class="text-small text-muted mb-1">国密杂凑算法，双哈希保障。</div>
+            <div class="hash-box dark mono" id="d-sm3">—</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 区块链存证信息 -->
+      <h2 class="section-title">区块链存证信息</h2>
+      <div class="card">
+        <div class="card-header"><span class="ch-icon">⛓</span><h3>交易与合约</h3></div>
+        <div class="card-body">
+          <div class="data-row stacked"><div class="data-label">交易哈希 (Transaction Hash)</div><div class="data-value mono" id="d-txHash">—</div></div>
+          <div class="data-row"><div class="data-label">区块高度</div><div class="data-value" id="d-blockNumber">—</div></div>
+          <div class="data-row stacked"><div class="data-label">合约地址 (Contract Address)</div><div class="data-value mono" id="d-contractAddress">—</div></div>
+          <div class="data-row stacked"><div class="data-label">提交者 (Submitter)</div><div class="data-value mono" id="d-submitter">—</div></div>
+          <div class="data-row"><div class="data-label">Gas 消耗</div><div class="data-value" id="d-gasUsed">—</div></div>
+          <div class="data-row"><div class="data-label">交易状态</div><div class="data-value" id="d-status">—</div></div>
+        </div>
+      </div>
+
+      <!-- 数字签名信息 -->
+      <h2 class="section-title">数字签名信息</h2>
+      <div class="card">
+        <div class="card-header"><span class="ch-icon">签</span><h3>ECDSA 签名 (secp256k1)</h3></div>
+        <div class="card-body">
+          <div class="data-row stacked"><div class="data-label">签名者地址 (Signer Address)</div><div class="data-value mono" id="d-signerAddress">—</div></div>
+          <div class="data-row stacked"><div class="data-label">签名值 (Signature)</div><div class="data-value mono" id="d-signature">—</div></div>
+          <div class="data-row"><div class="data-label">签名验证状态</div><div class="data-value" id="d-sigStatus">—</div></div>
+        </div>
+      </div>
+
+      <div class="btn-row mt-3">
+        <a class="btn btn-primary" href="./certificate.html">查看存证证书</a>
+        <a class="btn btn-secondary" href="./qrcode.html">生成二维码</a>
+        <a class="btn btn-outline" href="./verify.html">验证数据</a>
+        <a class="btn btn-danger" href="./tamper.html">篡改实验</a>
+      </div>
+    </div>
+  </main>
+
+  <footer class="footer">
+    <div class="foot-tags"><span class="tag tag-warning">模拟实验数据</span></div>
+    VegetableChain · 番茄档案详情 · 区块链数据来自 Hardhat 本地 EVM 网络
+  </footer>
+
+  <script src="./blockchain-data.js"></script>
+  <script>
+    (function () {
+      var D = window.BLOCKCHAIN_DATA || {};
+      var farm = D.farmData || {};
+      var veg = D.vegetable || {};
+      var bc = D.blockchain || {};
+      var tx = bc.transaction || {};
+      var con = bc.contract || {};
+      var sig = D.signatureInfo || {};
+      var ver = D.verification || {};
+
+      function setText(id, v) { var el = document.getElementById(id); if (el && v != null) el.textContent = v; }
+
+      setText('d-vegetableType', farm.vegetableType);
+      setText('d-variety', farm.variety);
+      setText('d-vegetableId', farm.vegetableId);
+      setText('d-batchNumber', farm.batchNumber);
+      setText('d-plantingBase', farm.plantingBase);
+      setText('d-location', farm.location);
+      setText('d-sowingDate', farm.sowingDate);
+      setText('d-transplantingDate', farm.transplantingDate);
+      setText('d-harvestDate', farm.harvestDate);
+      setText('d-plantingMethod', farm.plantingMethod);
+      setText('d-irrigationMethod', farm.irrigationMethod);
+      setText('d-plantingArea', farm.plantingArea);
+      setText('d-harvestWeight', farm.harvestWeight);
+      setText('d-qualityTest', farm.qualityTest);
+
+      setText('d-sha256', veg.sha256Hash);
+      setText('d-sm3', veg.sm3Hash);
+
+      setText('d-txHash', tx.hash);
+      setText('d-blockNumber', tx.blockNumber != null ? ('#' + tx.blockNumber) : '—');
+      setText('d-contractAddress', con.address);
+      setText('d-submitter', veg.submitter);
+      setText('d-gasUsed', tx.gasUsed != null ? (tx.gasUsed.toLocaleString() + ' gas') : '—');
+      setText('d-status', tx.status === 1 ? '成功 Success' : '失败 Failed');
+
+      setText('d-signerAddress', sig.signerAddress);
+      setText('d-signature', sig.signature);
+      setText('d-sigStatus', ver.signatureValid ? '有效 Valid' : '无效 Invalid');
+    })();
+  </script>
+</body>
+</html>

@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#2e7d32" />
+  <title>区块链存证证书 - VegetableChain</title>
+  <link rel="stylesheet" href="./style.css" />
+</head>
+<body>
+  <nav class="navbar">
+    <div class="nav-inner">
+      <a class="nav-brand" href="./index.html"><span class="brand-logo">蔬</span> VegetableChain</a>
+      <button class="nav-toggle" onclick="document.getElementById('navlinks').classList.toggle('open')">☰</button>
+      <div class="nav-links" id="navlinks">
+        <a class="nav-link" href="./index.html">首页</a>
+        <a class="nav-link" href="./create.html">创建档案</a>
+        <a class="nav-link" href="./detail.html">档案详情</a>
+        <a class="nav-link active" href="./certificate.html">存证证书</a>
+        <a class="nav-link" href="./qrcode.html">二维码</a>
+        <a class="nav-link" href="./verify.html">验证</a>
+        <a class="nav-link" href="./tamper.html">篡改实验</a>
+      </div>
+    </div>
+  </nav>
+
+  <main class="page">
+    <div class="container container-narrow">
+      <div class="flex between wrap items-center mb-2">
+        <h1 class="page-title">区块链存证证书</h1>
+        <span class="tag tag-warning">模拟实验数据</span>
+      </div>
+      <p class="page-subtitle mb-2">本证书展示蔬菜数字身份在区块链上的完整存证信息。</p>
+
+      <div class="certificate">
+        <div class="cert-seal">🌿</div>
+        <div class="cert-title">区块链存证证书</div>
+        <div class="cert-sub">VegetableChain · Blockchain Evidence Certificate</div>
+        <div class="tag-row" style="justify-content:center;">
+          <span class="tag tag-success" id="cert-status">已验证</span>
+          <span class="tag tag-warning">模拟实验数据</span>
+        </div>
+
+        <div class="cert-divider"></div>
+
+        <div class="cert-row"><div class="cl">蔬菜 ID</div><div class="cv mono" id="c-vegetableId">—</div></div>
+        <div class="cert-row"><div class="cl">蔬菜 / 品种</div><div class="cv" id="c-variety">—</div></div>
+        <div class="cert-row"><div class="cl">SHA-256 哈希</div><div class="cv mono" id="c-sha256">—</div></div>
+        <div class="cert-row"><div class="cl">SM3 哈希</div><div class="cv mono" id="c-sm3">—</div></div>
+
+        <div class="cert-divider"></div>
+
+        <div class="cert-row"><div class="cl">交易哈希</div><div class="cv mono" id="c-txHash">—</div></div>
+        <div class="cert-row"><div class="cl">区块高度</div><div class="cv" id="c-blockNumber">—</div></div>
+        <div class="cert-row"><div class="cl">区块哈希</div><div class="cv mono" id="c-blockHash">—</div></div>
+        <div class="cert-row"><div class="cl">父区块哈希</div><div class="cv mono" id="c-parentHash">—</div></div>
+        <div class="cert-row"><div class="cl">合约地址</div><div class="cv mono" id="c-contractAddress">—</div></div>
+        <div class="cert-row"><div class="cl">提交者地址</div><div class="cv mono" id="c-submitter">—</div></div>
+        <div class="cert-row"><div class="cl">部署者地址</div><div class="cv mono" id="c-deployer">—</div></div>
+        <div class="cert-row"><div class="cl">出块者地址</div><div class="cv mono" id="c-blockMiner">—</div></div>
+        <div class="cert-row"><div class="cl">Gas 消耗</div><div class="cv" id="c-gasUsed">—</div></div>
+        <div class="cert-row"><div class="cl">区块时间戳</div><div class="cv" id="c-timestamp">—</div></div>
+        <div class="cert-row"><div class="cl">部署时间</div><div class="cv" id="c-deployedAt">—</div></div>
+        <div class="cert-row"><div class="cl">网络</div><div class="cv" id="c-network">—</div></div>
+        <div class="cert-row"><div class="cl">Chain ID</div><div class="cv" id="c-chainId">—</div></div>
+
+        <div class="cert-stamp">
+          <span class="stamp" id="cert-stamp">已存证</span>
+        </div>
+      </div>
+
+      <div class="btn-row center mt-3">
+        <a class="btn btn-primary" href="./verify.html">验证数据完整性</a>
+        <a class="btn btn-secondary" href="./detail.html">返回档案详情</a>
+        <a class="btn btn-outline" href="./qrcode.html">生成二维码</a>
+      </div>
+    </div>
+  </main>
+
+  <footer class="footer">
+    <div class="foot-tags"><span class="tag tag-warning">模拟实验数据</span></div>
+    VegetableChain · 区块链存证证书 · 模拟实验演示项目
+  </footer>
+
+  <script src="./blockchain-data.js"></script>
+  <script>
+    (function () {
+      var D = window.BLOCKCHAIN_DATA || {};
+      var veg = D.vegetable || {};
+      var farm = D.farmData || {};
+      var bc = D.blockchain || {};
+      var tx = bc.transaction || {};
+      var con = bc.contract || {};
+      var net = bc.network || {};
+      var ver = D.verification || {};
+
+      function setText(id, v) { var el = document.getElementById(id); if (el && v != null) el.textContent = v; }
+      function fmtDate(ts) {
+        if (ts == null) return '—';
+        var d = new Date(ts * 1000);
+        if (isNaN(d.getTime())) return '—';
+        var p = function (n) { return (n < 10 ? '0' : '') + n; };
+        return d.getUTCFullYear() + '-' + p(d.getUTCMonth() + 1) + '-' + p(d.getUTCDate()) +
+          ' ' + p(d.getUTCHours()) + ':' + p(d.getUTCMinutes()) + ':' + p(d.getUTCSeconds()) + ' UTC';
+      }
+      function fmtISO(iso) {
+        if (!iso) return '—';
+        var d = new Date(iso);
+        if (isNaN(d.getTime())) return iso;
+        return d.toISOString().replace('T', ' ').replace(/\.\d+Z$/, ' UTC');
+      }
+
+      setText('c-vegetableId', veg.vegetableId || farm.vegetableId);
+      setText('c-variety', (farm.vegetableType || '') + ' · ' + (farm.variety || ''));
+      setText('c-sha256', veg.sha256Hash);
+      setText('c-sm3', veg.sm3Hash);
+      setText('c-txHash', tx.hash);
+      setText('c-blockNumber', tx.blockNumber != null ? ('#' + tx.blockNumber) : '—');
+      setText('c-blockHash', tx.blockHash);
+      setText('c-parentHash', tx.parentHash);
+      setText('c-contractAddress', con.address);
+      setText('c-submitter', veg.submitter);
+      setText('c-deployer', con.deployer);
+      setText('c-blockMiner', tx.blockMiner);
+      setText('c-gasUsed', tx.gasUsed != null ? (tx.gasUsed.toLocaleString() + ' gas') : '—');
+      setText('c-timestamp', fmtDate(tx.blockTimestamp));
+      setText('c-deployedAt', fmtISO(con.deployedAt));
+      setText('c-network', net.name);
+      setText('c-chainId', net.chainId != null ? (net.chainId + '') : '—');
+
+      var st = document.getElementById('cert-status');
+      var stamp = document.getElementById('cert-stamp');
+      if (ver.isVerified) {
+        st.textContent = '已验证';
+        st.className = 'tag tag-success';
+        stamp.textContent = '已存证';
+      } else {
+        st.textContent = '未通过';
+        st.className = 'tag tag-danger';
+        stamp.textContent = '存证异常';
+      }
+    })();
+  </script>
+</body>
+</html>

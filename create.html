@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#2e7d32" />
+  <title>创建蔬菜档案 - VegetableChain</title>
+  <link rel="stylesheet" href="./style.css" />
+</head>
+<body>
+  <nav class="navbar">
+    <div class="nav-inner">
+      <a class="nav-brand" href="./index.html"><span class="brand-logo">蔬</span> VegetableChain</a>
+      <button class="nav-toggle" onclick="document.getElementById('navlinks').classList.toggle('open')">☰</button>
+      <div class="nav-links" id="navlinks">
+        <a class="nav-link" href="./index.html">首页</a>
+        <a class="nav-link active" href="./create.html">创建档案</a>
+        <a class="nav-link" href="./detail.html">档案详情</a>
+        <a class="nav-link" href="./certificate.html">存证证书</a>
+        <a class="nav-link" href="./qrcode.html">二维码</a>
+        <a class="nav-link" href="./verify.html">验证</a>
+        <a class="nav-link" href="./tamper.html">篡改实验</a>
+      </div>
+    </div>
+  </nav>
+
+  <main class="page">
+    <div class="container">
+      <div class="flex between wrap items-center mb-2">
+        <div>
+          <h1 class="page-title">创建蔬菜档案</h1>
+          <p class="page-subtitle">录入农场数据，实时计算规范化 JSON 与 SHA-256 / SM3 指纹，并比对链上存证。</p>
+        </div>
+        <span class="tag tag-warning">模拟实验数据</span>
+      </div>
+
+      <div class="note mb-2">
+        <strong>说明：</strong> 本页农场数据为<strong>模拟实验数据</strong>，已预填只读展示。页面加载后会在浏览器本地真实计算哈希，并将计算结果与区块链存证哈希进行比对。
+      </div>
+
+      <!-- 农场数据表单（只读预填） -->
+      <h2 class="section-title">农场数据</h2>
+      <div class="card">
+        <div class="card-body">
+          <div class="form-grid" id="farmForm">
+            <div class="field"><label>蔬菜类型</label><input id="f-vegetableType" readonly /></div>
+            <div class="field"><label>品种</label><input id="f-variety" readonly /></div>
+            <div class="field"><label>蔬菜 ID</label><input id="f-vegetableId" readonly /></div>
+            <div class="field"><label>批次编号</label><input id="f-batchNumber" readonly /></div>
+            <div class="field full"><label>种植基地</label><input id="f-plantingBase" readonly /></div>
+            <div class="field"><label>种植地点</label><input id="f-location" readonly /></div>
+            <div class="field"><label>播种日期</label><input id="f-sowingDate" readonly /></div>
+            <div class="field"><label>移栽日期</label><input id="f-transplantingDate" readonly /></div>
+            <div class="field"><label>采摘日期</label><input id="f-harvestDate" readonly /></div>
+            <div class="field"><label>种植方式</label><input id="f-plantingMethod" readonly /></div>
+            <div class="field"><label>灌溉方式</label><input id="f-irrigationMethod" readonly /></div>
+            <div class="field"><label>种植面积</label><input id="f-plantingArea" readonly /></div>
+            <div class="field"><label>采收重量</label><input id="f-harvestWeight" readonly /></div>
+            <div class="field"><label>质量检测</label><input id="f-qualityTest" readonly /></div>
+            <div class="field"><label>数据标识</label><input id="f-label" readonly /></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 实时哈希计算 -->
+      <h2 class="section-title">规范化 JSON 与指纹计算</h2>
+      <div class="grid grid-2">
+        <div class="card">
+          <div class="card-header">
+            <span class="ch-icon">{ }</span>
+            <h3>规范化 JSON (Canonical JSON)</h3>
+          </div>
+          <div class="card-body">
+            <div class="text-small text-muted mb-1">键名按字典序排序，去除空白，作为哈希输入。</div>
+            <div class="hash-box dark mono" id="canonicalBox">计算中…</div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-header">
+            <span class="ch-icon">#</span>
+            <h3>哈希指纹</h3>
+          </div>
+          <div class="card-body" id="hashBody">
+            <div class="data-row stacked">
+              <div class="data-label">本地计算 SHA-256</div>
+              <div class="data-value mono"><span id="calcSha256">计算中…</span></div>
+            </div>
+            <div class="data-row stacked">
+              <div class="data-label">链上存证 SHA-256</div>
+              <div class="data-value mono"><span id="onSha256">—</span></div>
+            </div>
+            <div class="data-row stacked">
+              <div class="data-label">本地计算 SM3</div>
+              <div class="data-value mono"><span id="calcSm3">计算中…</span></div>
+            </div>
+            <div class="data-row stacked">
+              <div class="data-label">链上存证 SM3</div>
+              <div class="data-value mono"><span id="onSm3">—</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 比对结果 -->
+      <h2 class="section-title">与区块链存证比对</h2>
+      <div class="check-list">
+        <div class="check-item loading" id="chkSha">
+          <div class="ci-icon"><span class="spin"></span></div>
+          <div class="ci-body">
+            <div class="ci-title">SHA-256 指纹比对</div>
+            <div class="ci-detail" id="chkShaDetail">正在比对本地计算结果与链上存证…</div>
+          </div>
+        </div>
+        <div class="check-item loading" id="chkSm">
+          <div class="ci-icon"><span class="spin"></span></div>
+          <div class="ci-body">
+            <div class="ci-title">SM3 指纹比对</div>
+            <div class="ci-detail" id="chkSmDetail">正在比对本地计算结果与链上存证…</div>
+          </div>
+        </div>
+      </div>
+
+      <div id="verdictWrap" class="mt-3 hidden">
+        <div class="verdict pass" id="verdictBox">
+          <div class="verdict-icon">✅</div>
+          <div class="verdict-text" id="verdictText">数据指纹与区块链存证一致
+            <small id="verdictSub">本地计算哈希与链上存证哈希完全匹配，数据完整、未被篡改。</small>
+          </div>
+        </div>
+      </div>
+
+      <div class="btn-row mt-3">
+        <a class="btn btn-primary" href="./certificate.html">查看上链结果</a>
+        <a class="btn btn-secondary" href="./verify.html">完整数据验证</a>
+        <a class="btn btn-outline" href="./index.html">返回首页</a>
+      </div>
+    </div>
+  </main>
+
+  <footer class="footer">
+    <div class="foot-tags"><span class="tag tag-warning">模拟实验数据</span></div>
+    VegetableChain · 创建蔬菜档案 · 哈希在浏览器本地真实计算（Web Crypto API / 国密 SM3）
+  </footer>
+
+  <script src="./blockchain-data.js"></script>
+  <script src="./crypto-utils.js"></script>
+  <script>
+    (async function () {
+      var D = window.BLOCKCHAIN_DATA || {};
+      var farm = D.farmData || {};
+
+      // 预填只读表单
+      var map = {
+        'f-vegetableType': farm.vegetableType,
+        'f-variety': farm.variety,
+        'f-vegetableId': farm.vegetableId,
+        'f-batchNumber': farm.batchNumber,
+        'f-plantingBase': farm.plantingBase,
+        'f-location': farm.location,
+        'f-sowingDate': farm.sowingDate,
+        'f-transplantingDate': farm.transplantingDate,
+        'f-harvestDate': farm.harvestDate,
+        'f-plantingMethod': farm.plantingMethod,
+        'f-irrigationMethod': farm.irrigationMethod,
+        'f-plantingArea': farm.plantingArea,
+        'f-harvestWeight': farm.harvestWeight,
+        'f-qualityTest': farm.qualityTest,
+        'f-label': farm.label
+      };
+      Object.keys(map).forEach(function (id) {
+        var el = document.getElementById(id);
+        if (el) el.value = map[id] != null ? map[id] : '';
+      });
+
+      // 链上哈希
+      function strip0x(h) { return (h || '').replace(/^0x/i, '').toLowerCase(); }
+      var onSha = strip0x(D.vegetable && D.vegetable.sha256Hash);
+      var onSm = strip0x(D.vegetable && D.vegetable.sm3Hash);
+      setText('onSha256', '0x' + onSha);
+      setText('onSm3', '0x' + onSm);
+
+      if (!window.CryptoUtils) {
+        setText('canonicalBox', 'crypto-utils.js 未加载，无法计算。');
+        return;
+      }
+
+      // 规范化 JSON
+      var canonical = window.CryptoUtils.canonicalJSON(farm);
+      setText('canonicalBox', canonical);
+
+      // SHA-256（异步）
+      var calcSha;
+      try { calcSha = await window.CryptoUtils.sha256(canonical); }
+      catch (e) { calcSha = '（计算失败：' + e.message + '）'; }
+      setText('calcSha256', '0x' + calcSha);
+
+      // SM3
+      var calcSm = window.CryptoUtils.sm3(canonical);
+      setText('calcSm3', '0x' + calcSm);
+
+      // 比对
+      var shaMatch = calcSha.toLowerCase() === onSha;
+      var smMatch = calcSm.toLowerCase() === onSm;
+      setCheck('chkSha', 'chkShaDetail', shaMatch,
+        shaMatch ? '本地 SHA-256 与链上存证一致' : '本地 SHA-256 与链上存证不一致');
+      setCheck('chkSm', 'chkSmDetail', smMatch,
+        smMatch ? '本地 SM3 与链上存证一致' : '本地 SM3 与链上存证不一致');
+
+      // 最终结论
+      var vw = document.getElementById('verdictWrap');
+      var vb = document.getElementById('verdictBox');
+      var vt = document.getElementById('verdictText');
+      var vs = document.getElementById('verdictSub');
+      if (shaMatch && smMatch) {
+        vb.className = 'verdict pass';
+        vt.innerHTML = '数据指纹与区块链存证一致<small>本地计算哈希与链上存证哈希完全匹配，数据完整、未被篡改。</small>';
+      } else {
+        vb.className = 'verdict fail';
+        vb.querySelector('.verdict-icon').textContent = '❌';
+        vt.innerHTML = '数据指纹与区块链存证不一致<small>本地计算哈希与链上存证哈希不匹配，数据可能已被篡改。</small>';
+      }
+      vw.classList.remove('hidden');
+
+      function setText(id, v) { var el = document.getElementById(id); if (el) el.textContent = v; }
+      function setCheck(itemId, detailId, ok, msg) {
+        var item = document.getElementById(itemId);
+        var det = document.getElementById(detailId);
+        item.className = 'check-item ' + (ok ? 'pass' : 'fail');
+        item.querySelector('.ci-icon').innerHTML = ok ? '✓' : '✕';
+        if (det) det.textContent = msg;
+      }
+    })();
+  </script>
+</body>
+</html>

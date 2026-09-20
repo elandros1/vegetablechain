@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#2e7d32" />
+  <title>篡改实验 - VegetableChain</title>
+  <link rel="stylesheet" href="./style.css" />
+</head>
+<body>
+  <nav class="navbar">
+    <div class="nav-inner">
+      <a class="nav-brand" href="./index.html"><span class="brand-logo">蔬</span> VegetableChain</a>
+      <button class="nav-toggle" onclick="document.getElementById('navlinks').classList.toggle('open')">☰</button>
+      <div class="nav-links" id="navlinks">
+        <a class="nav-link" href="./index.html">首页</a>
+        <a class="nav-link" href="./create.html">创建档案</a>
+        <a class="nav-link" href="./detail.html">档案详情</a>
+        <a class="nav-link" href="./certificate.html">存证证书</a>
+        <a class="nav-link" href="./qrcode.html">二维码</a>
+        <a class="nav-link" href="./verify.html">验证</a>
+        <a class="nav-link active" href="./tamper.html">篡改实验</a>
+      </div>
+    </div>
+  </nav>
+
+  <main class="page">
+    <div class="container container-sm">
+      <div class="flex between wrap items-center mb-2">
+        <div>
+          <h1 class="page-title">篡改实验</h1>
+          <p class="page-subtitle">演示数据被篡改后，本地哈希与区块链存证哈希不再一致，验证立即失败。</p>
+        </div>
+        <span class="tag tag-warning">模拟实验数据</span>
+      </div>
+
+      <div class="note mb-2">
+        <strong>实验说明：</strong> 原始档案采收重量为 <strong>2860kg</strong>。点击“模拟篡改数据”可将采收重量改为 <strong>3860kg</strong>，并在浏览器本地重新计算哈希，与链上存证哈希对比。
+      </div>
+
+      <!-- 原始 vs 篡改 数据 -->
+      <h2 class="section-title">数据对比</h2>
+      <div class="card">
+        <div class="card-body">
+          <div class="data-row">
+            <div class="data-label">蔬菜 ID</div>
+            <div class="data-value mono" id="t-vegetableId">—</div>
+          </div>
+          <div class="data-row">
+            <div class="data-label">采收重量（原始）</div>
+            <div class="data-value"><span class="tag tag-success" id="t-origWeight">2860kg</span></div>
+          </div>
+          <div class="data-row">
+            <div class="data-label">采收重量（当前）</div>
+            <div class="data-value"><span class="tag tag-success" id="t-curWeight">2860kg</span></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="btn-row mt-2">
+        <button class="btn btn-danger" id="btnTamper">模拟篡改数据</button>
+        <button class="btn btn-outline" id="btnReset">恢复原始数据</button>
+        <a class="btn btn-secondary" href="./verify.html">查看正常验证</a>
+      </div>
+
+      <!-- 哈希对比表 -->
+      <h2 class="section-title">哈希对比</h2>
+      <div class="card">
+        <div class="card-body" style="padding:0;">
+          <table class="compare-table">
+            <thead>
+              <tr>
+                <th>项目</th>
+                <th>区块链存证（原始）</th>
+                <th>当前数据计算</th>
+                <th>结果</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td class="col-label">采收重量</td>
+                <td class="orig mono" id="cmp-origWeight">2860kg</td>
+                <td class="tamp mono" id="cmp-curWeight">2860kg</td>
+                <td><span class="status status-pass" id="cmp-weightStatus"><span class="dot pass"></span>一致</span></td>
+              </tr>
+              <tr>
+                <td class="col-label">SHA-256</td>
+                <td class="orig mono" id="cmp-origSha">—</td>
+                <td class="tamp mono" id="cmp-curSha">—</td>
+                <td><span class="status status-pass" id="cmp-shaStatus"><span class="dot loading"></span>计算中</span></td>
+              </tr>
+              <tr>
+                <td class="col-label">SM3</td>
+                <td class="orig mono" id="cmp-origSm">—</td>
+                <td class="tamp mono" id="cmp-curSm">—</td>
+                <td><span class="status status-pass" id="cmp-smStatus"><span class="dot loading"></span>计算中</span></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- 最终结论 -->
+      <h2 class="section-title">验证结论</h2>
+      <div class="verdict pass" id="verdictBox">
+        <div class="verdict-icon" id="verdictIcon">✅</div>
+        <div class="verdict-text" id="verdictText">数据完整性验证通过
+          <small id="verdictSub">当前数据与区块链存证一致。</small>
+        </div>
+      </div>
+
+      <!-- 篡改说明 -->
+      <div class="note mt-2 hidden" id="tamperExplain">
+        <strong>篡改说明：</strong> 当前数据 Hash 与区块链存证 Hash 不一致。采收重量从 2860kg 被修改为 3860kg，区块链存证记录的原始 Hash 未被改变，因此验证失败。
+      </div>
+    </div>
+  </main>
+
+  <footer class="footer">
+    <div class="foot-tags"><span class="tag tag-warning">模拟实验数据</span></div>
+    VegetableChain · 篡改实验 · 哈希在浏览器本地真实计算
+  </footer>
+
+  <script src="./blockchain-data.js"></script>
+  <script src="./crypto-utils.js"></script>
+  <script>
+    (function () {
+      var D = window.BLOCKCHAIN_DATA || {};
+      var farmOrig = D.farmData || {};
+      var veg = D.vegetable || {};
+
+      // 深拷贝原始数据
+      function clone(o) { return JSON.parse(JSON.stringify(o)); }
+
+      var onSha = (veg.sha256Hash || '').replace(/^0x/i, '').toLowerCase();
+      var onSm = (veg.sm3Hash || '').replace(/^0x/i, '').toLowerCase();
+
+      // 初始状态：当前数据 = 原始数据
+      var current = clone(farmOrig);
+      var isTampered = false;
+
+      function setText(id, v) { var el = document.getElementById(id); if (el && v != null) el.textContent = v; }
+
+      // 渲染静态部分
+      setText('t-vegetableId', farmOrig.vegetableId);
+      setText('cmp-origWeight', '2860kg');
+      setText('cmp-origSha', '0x' + onSha);
+      setText('cmp-origSm', '0x' + onSm);
+
+      // 计算并渲染当前数据的哈希 + 结论
+      async function render() {
+        if (!window.CryptoUtils) {
+          setText('cmp-curSha', 'crypto-utils.js 未加载');
+          setText('cmp-curSm', 'crypto-utils.js 未加载');
+          return;
+        }
+
+        // 当前重量标签
+        var curWeight = current.harvestWeight;
+        var weightEl = document.getElementById('t-curWeight');
+        var cmpCurWeightEl = document.getElementById('cmp-curWeight');
+        if (weightEl) {
+          weightEl.textContent = curWeight;
+          weightEl.className = 'tag ' + (isTampered ? 'tag-danger' : 'tag-success');
+        }
+        if (cmpCurWeightEl) {
+          cmpCurWeightEl.textContent = curWeight;
+        }
+
+        // canonical JSON
+        var canonical = window.CryptoUtils.canonicalJSON(current);
+
+        // SHA-256（异步）
+        var calcSha = await window.CryptoUtils.sha256(canonical);
+        var calcSm = window.CryptoUtils.sm3(canonical);
+
+        setText('cmp-curSha', '0x' + calcSha);
+        setText('cmp-curSm', '0x' + calcSm);
+
+        var shaMatch = calcSha.toLowerCase() === onSha;
+        var smMatch = calcSm.toLowerCase() === onSm;
+        setStatus('cmp-shaStatus', shaMatch, shaMatch ? '一致' : '不一致');
+        setStatus('cmp-smStatus', smMatch, smMatch ? '一致' : '不一致');
+        setStatus('cmp-weightStatus', !isTampered, !isTampered ? '一致' : '不一致');
+
+        var isVerified = shaMatch && smMatch;
+        var box = document.getElementById('verdictBox');
+        var icon = document.getElementById('verdictIcon');
+        var text = document.getElementById('verdictText');
+        var sub = document.getElementById('verdictSub');
+        box.className = 'verdict ' + (isVerified ? 'pass' : 'fail');
+        icon.textContent = isVerified ? '✅' : '❌';
+
+        if (isVerified) {
+          text.innerHTML = '数据完整性验证通过<small>当前数据与区块链存证一致。</small>';
+        } else {
+          text.innerHTML = '数据完整性验证失败<small>❌ 数据完整性验证失败，当前数据与区块链存证不一致。</small>';
+        }
+
+        var explain = document.getElementById('tamperExplain');
+        if (isTampered && !isVerified) {
+          explain.classList.remove('hidden');
+        } else {
+          explain.classList.add('hidden');
+        }
+      }
+
+      function setStatus(id, ok, label) {
+        var el = document.getElementById(id);
+        if (!el) return;
+        el.className = 'status ' + (ok ? 'status-pass' : 'status-fail');
+        el.innerHTML = '<span class="dot ' + (ok ? 'pass' : 'fail') + '"></span>' + label;
+      }
+
+      document.getElementById('btnTamper').addEventListener('click', function () {
+        current = clone(farmOrig);
+        current.harvestWeight = '3860kg';
+        isTampered = true;
+        render();
+      });
+
+      document.getElementById('btnReset').addEventListener('click', function () {
+        current = clone(farmOrig);
+        isTampered = false;
+        render();
+      });
+
+      render();
+    })();
+  </script>
+</body>
+</html>

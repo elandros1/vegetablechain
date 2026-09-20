@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#2e7d32" />
+  <title>溯源二维码 - VegetableChain</title>
+  <link rel="stylesheet" href="./style.css" />
+</head>
+<body>
+  <nav class="navbar">
+    <div class="nav-inner">
+      <a class="nav-brand" href="./index.html"><span class="brand-logo">蔬</span> VegetableChain</a>
+      <button class="nav-toggle" onclick="document.getElementById('navlinks').classList.toggle('open')">☰</button>
+      <div class="nav-links" id="navlinks">
+        <a class="nav-link" href="./index.html">首页</a>
+        <a class="nav-link" href="./create.html">创建档案</a>
+        <a class="nav-link" href="./detail.html">档案详情</a>
+        <a class="nav-link" href="./certificate.html">存证证书</a>
+        <a class="nav-link active" href="./qrcode.html">二维码</a>
+        <a class="nav-link" href="./verify.html">验证</a>
+        <a class="nav-link" href="./tamper.html">篡改实验</a>
+      </div>
+    </div>
+  </nav>
+
+  <main class="page">
+    <div class="container container-sm">
+      <div class="flex between wrap items-center mb-2">
+        <div>
+          <h1 class="page-title">溯源二维码</h1>
+          <p class="page-subtitle">生成扫码验证二维码，消费者扫码即可核验蔬菜数字身份。</p>
+        </div>
+        <span class="tag tag-warning">模拟实验数据</span>
+      </div>
+
+      <div class="card">
+        <div class="card-body">
+          <div class="qr-wrap">
+            <div class="instruction" id="instrTop">用手机扫描二维码进行验证</div>
+            <div class="qr-frame">
+              <div id="qrcode"></div>
+            </div>
+
+            <div class="card" style="width:100%; max-width:520px; box-shadow:var(--shadow-sm);">
+              <div class="card-header"><span class="ch-icon">🔗</span><h3>二维码内容</h3></div>
+              <div class="card-body">
+                <div class="text-small text-muted mb-1">扫描后将打开验证页面：</div>
+                <div class="hash-box mono" id="qr-url">—</div>
+                <div class="data-row mt-1"><div class="data-label">蔬菜 ID</div><div class="data-value mono" id="qr-vid">—</div></div>
+              </div>
+            </div>
+
+            <div class="instruction">用手机扫描二维码进行验证，或在下方直接打开验证页面。</div>
+            <div class="btn-row center">
+              <a class="btn btn-primary" id="openVerify" href="./verify.html">直接打开验证页面</a>
+              <a class="btn btn-secondary" href="./certificate.html">查看存证证书</a>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="note mt-2">
+        <strong>提示：</strong> 二维码编码的是 <strong>verify.html</strong> 验证页面的访问地址。在本地部署或 GitHub Pages 上访问时，二维码会自动指向当前站点的验证页面。
+      </div>
+    </div>
+  </main>
+
+  <footer class="footer">
+    <div class="foot-tags"><span class="tag tag-warning">模拟实验数据</span></div>
+    VegetableChain · 溯源二维码 · 基于 qrcode.js
+  </footer>
+
+  <script src="./blockchain-data.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+  <script>
+    (function () {
+      var D = window.BLOCKCHAIN_DATA || {};
+      var veg = D.vegetable || {};
+
+      // 计算 verify.html 的访问地址
+      var path = window.location.pathname.replace(/[^/]*$/, 'verify.html');
+      var url = window.location.origin + path;
+      // 若为 file:// 协议（本地直接打开），退化为相对路径
+      if (window.location.protocol === 'file:') {
+        url = 'verify.html';
+      }
+
+      var urlEl = document.getElementById('qr-url');
+      var vidEl = document.getElementById('qr-vid');
+      var openBtn = document.getElementById('openVerify');
+      if (urlEl) urlEl.textContent = url;
+      if (vidEl) vidEl.textContent = veg.vegetableId || '—';
+      if (openBtn) openBtn.setAttribute('href', url);
+
+      var holder = document.getElementById('qrcode');
+      if (holder && typeof QRCode !== 'undefined') {
+        try {
+          /* eslint-disable no-new */
+          new QRCode(holder, {
+            text: url,
+            width: 220,
+            height: 220,
+            colorDark: '#1b5e20',
+            colorLight: '#ffffff',
+            correctLevel: QRCode.CorrectLevel ? QRCode.CorrectLevel.M : undefined
+          });
+        } catch (e) {
+          holder.textContent = '二维码生成失败：' + e.message;
+        }
+      } else if (holder) {
+        // 回退：纯文本提示
+        holder.textContent = 'qrcode.js 未加载，无法生成二维码。';
+      }
+    })();
+  </script>
+</body>
+</html>

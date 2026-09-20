@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#2e7d32" />
+  <title>扫码验证 - VegetableChain</title>
+  <link rel="stylesheet" href="./style.css" />
+</head>
+<body>
+  <nav class="navbar">
+    <div class="nav-inner">
+      <a class="nav-brand" href="./index.html"><span class="brand-logo">蔬</span> VegetableChain</a>
+      <button class="nav-toggle" onclick="document.getElementById('navlinks').classList.toggle('open')">☰</button>
+      <div class="nav-links" id="navlinks">
+        <a class="nav-link" href="./index.html">首页</a>
+        <a class="nav-link" href="./create.html">创建档案</a>
+        <a class="nav-link" href="./detail.html">档案详情</a>
+        <a class="nav-link" href="./certificate.html">存证证书</a>
+        <a class="nav-link" href="./qrcode.html">二维码</a>
+        <a class="nav-link active" href="./verify.html">验证</a>
+        <a class="nav-link" href="./tamper.html">篡改实验</a>
+      </div>
+    </div>
+  </nav>
+
+  <main class="page">
+    <div class="container container-sm">
+      <div class="flex between wrap items-center mb-2">
+        <div>
+          <h1 class="page-title">扫码验证</h1>
+          <p class="page-subtitle">在浏览器本地重新计算哈希并核验数字签名，确认数据与区块链存证一致。</p>
+        </div>
+        <span class="tag tag-warning">模拟实验数据</span>
+      </div>
+
+      <!-- 蔬菜信息 -->
+      <h2 class="section-title">蔬菜信息</h2>
+      <div class="card">
+        <div class="card-body">
+          <div class="data-row"><div class="data-label">蔬菜 ID</div><div class="data-value mono" id="v-vegetableId">—</div></div>
+          <div class="data-row"><div class="data-label">品种</div><div class="data-value" id="v-variety">—</div></div>
+          <div class="data-row"><div class="data-label">种植基地</div><div class="data-value" id="v-plantingBase">—</div></div>
+          <div class="data-row"><div class="data-label">采摘日期</div><div class="data-value" id="v-harvestDate">—</div></div>
+          <div class="data-row"><div class="data-label">采收重量</div><div class="data-value" id="v-harvestWeight">—</div></div>
+        </div>
+      </div>
+
+      <!-- 验证步骤 -->
+      <h2 class="section-title">验证步骤</h2>
+      <div class="check-list">
+        <div class="check-item loading" id="chk-canonical">
+          <div class="ci-icon"><span class="spin"></span></div>
+          <div class="ci-body">
+            <div class="ci-title">规范化 JSON</div>
+            <div class="ci-detail" id="d-canonical">正在生成规范化 JSON…</div>
+          </div>
+        </div>
+        <div class="check-item loading" id="chk-sha">
+          <div class="ci-icon"><span class="spin"></span></div>
+          <div class="ci-body">
+            <div class="ci-title">SHA-256 哈希比对</div>
+            <div class="ci-detail" id="d-sha">正在计算并比对…</div>
+          </div>
+        </div>
+        <div class="check-item loading" id="chk-sm">
+          <div class="ci-icon"><span class="spin"></span></div>
+          <div class="ci-body">
+            <div class="ci-title">SM3 哈希比对</div>
+            <div class="ci-detail" id="d-sm">正在计算并比对…</div>
+          </div>
+        </div>
+        <div class="check-item loading" id="chk-sig">
+          <div class="ci-icon"><span class="spin"></span></div>
+          <div class="ci-body">
+            <div class="ci-title">ECDSA 数字签名验证</div>
+            <div class="ci-detail" id="d-sig">正在使用 ethers.js 恢复签名者地址…</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 哈希详情 -->
+      <h2 class="section-title">哈希详情</h2>
+      <div class="grid grid-2">
+        <div class="card">
+          <div class="card-header"><span class="ch-icon">#</span><h3>SHA-256</h3></div>
+          <div class="card-body">
+            <div class="data-row stacked"><div class="data-label">本地计算</div><div class="data-value mono hash-box muted-bg" id="sha-calc">—</div></div>
+            <div class="data-row stacked"><div class="data-label">链上存证</div><div class="data-value mono hash-box muted-bg" id="sha-on">—</div></div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-header"><span class="ch-icon">国</span><h3>SM3</h3></div>
+          <div class="card-body">
+            <div class="data-row stacked"><div class="data-label">本地计算</div><div class="data-value mono hash-box muted-bg" id="sm-calc">—</div></div>
+            <div class="data-row stacked"><div class="data-label">链上存证</div><div class="data-value mono hash-box muted-bg" id="sm-on">—</div></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 签名详情 -->
+      <h2 class="section-title">签名详情</h2>
+      <div class="card">
+        <div class="card-body">
+          <div class="data-row stacked"><div class="data-label">签名消息 (Message = 0x + SHA-256)</div><div class="data-value mono" id="sig-msg">—</div></div>
+          <div class="data-row stacked"><div class="data-label">签名值 (Signature)</div><div class="data-value mono" id="sig-val">—</div></div>
+          <div class="data-row stacked"><div class="data-label">恢复出的签名者 (Recovered)</div><div class="data-value mono" id="sig-recovered">—</div></div>
+          <div class="data-row stacked"><div class="data-label">预期签名者 (Signer)</div><div class="data-value mono" id="sig-signer">—</div></div>
+        </div>
+      </div>
+
+      <!-- 最终结论 -->
+      <h2 class="section-title">验证结论</h2>
+      <div class="verdict pass" id="verdictBox">
+        <div class="verdict-icon" id="verdictIcon"><span class="spin"></span></div>
+        <div class="verdict-text" id="verdictText">正在执行数据完整性验证…
+          <small id="verdictSub">请稍候，正在本地计算哈希并核验签名。</small>
+        </div>
+      </div>
+
+      <!-- 区块链凭证 -->
+      <h2 class="section-title">区块链凭证</h2>
+      <div class="card">
+        <div class="card-body">
+          <div class="data-row stacked"><div class="data-label">交易哈希</div><div class="data-value mono" id="v-txHash">—</div></div>
+          <div class="data-row"><div class="data-label">区块高度</div><div class="data-value" id="v-blockNumber">—</div></div>
+          <div class="data-row stacked"><div class="data-label">合约地址</div><div class="data-value mono" id="v-contractAddress">—</div></div>
+        </div>
+      </div>
+
+      <div class="btn-row mt-3">
+        <a class="btn btn-primary" href="./certificate.html">查看存证证书</a>
+        <a class="btn btn-secondary" href="./tamper.html">篡改实验</a>
+        <a class="btn btn-outline" href="./index.html">返回首页</a>
+      </div>
+    </div>
+  </main>
+
+  <footer class="footer">
+    <div class="foot-tags"><span class="tag tag-warning">模拟实验数据</span></div>
+    VegetableChain · 扫码验证 · 哈希与签名均在浏览器本地核验（Web Crypto / 国密 SM3 / ethers.js）
+  </footer>
+
+  <script src="./blockchain-data.js"></script>
+  <script src="./crypto-utils.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/6.13.4/ethers.umd.min.js"></script>
+  <script>
+    (async function () {
+      var D = window.BLOCKCHAIN_DATA || {};
+      var farm = D.farmData || {};
+      var veg = D.vegetable || {};
+      var bc = D.blockchain || {};
+      var tx = bc.transaction || {};
+      var con = bc.contract || {};
+      var sig = D.signatureInfo || {};
+
+      function setText(id, v) { var el = document.getElementById(id); if (el && v != null) el.textContent = v; }
+      function strip0x(h) { return (h || '').replace(/^0x/i, '').toLowerCase(); }
+      function setCheck(itemId, detailId, ok, detail) {
+        var item = document.getElementById(itemId);
+        var det = document.getElementById(detailId);
+        if (!item) return;
+        item.className = 'check-item ' + (ok ? 'pass' : 'fail');
+        item.querySelector('.ci-icon').innerHTML = ok ? '✓' : '✕';
+        if (det) det.textContent = detail;
+      }
+
+      // 蔬菜信息
+      setText('v-vegetableId', veg.vegetableId || farm.vegetableId);
+      setText('v-variety', farm.vegetableType + ' · ' + farm.variety);
+      setText('v-plantingBase', farm.plantingBase);
+      setText('v-harvestDate', farm.harvestDate);
+      setText('v-harvestWeight', farm.harvestWeight);
+
+      // 区块链凭证
+      setText('v-txHash', tx.hash);
+      setText('v-blockNumber', tx.blockNumber != null ? ('#' + tx.blockNumber) : '—');
+      setText('v-contractAddress', con.address);
+
+      // 链上哈希
+      var onSha = strip0x(veg.sha256Hash);
+      var onSm = strip0x(veg.sm3Hash);
+      setText('sha-on', '0x' + onSha);
+      setText('sm-on', '0x' + onSm);
+
+      if (!window.CryptoUtils) {
+        setCheck('chk-canonical', 'd-canonical', false, 'crypto-utils.js 未加载');
+        setCheck('chk-sha', 'd-sha', false, '无法计算 SHA-256');
+        setCheck('chk-sm', 'd-sm', false, '无法计算 SM3');
+        showVerdict(false, '加密工具未加载，验证失败。');
+        return;
+      }
+
+      // 1. canonicalJSON
+      var canonical = window.CryptoUtils.canonicalJSON(farm);
+      setCheck('chk-canonical', 'd-canonical', true, '已生成规范化 JSON（键名字典序、无空白）');
+      setText('d-canonical', '已生成规范化 JSON（' + canonical.length + ' 字符）');
+
+      // 2. SHA-256（异步）
+      var calcSha;
+      try {
+        calcSha = await window.CryptoUtils.sha256(canonical);
+      } catch (e) {
+        setCheck('chk-sha', 'd-sha', false, 'SHA-256 计算失败：' + e.message);
+        showVerdict(false, 'SHA-256 计算失败。');
+        return;
+      }
+      var shaMatch = calcSha.toLowerCase() === onSha;
+      setText('sha-calc', '0x' + calcSha);
+      setCheck('chk-sha', 'd-sha', shaMatch,
+        shaMatch ? '本地计算 SHA-256 与链上存证一致' : '本地计算 SHA-256 与链上存证不一致');
+
+      // 3. SM3
+      var calcSm = window.CryptoUtils.sm3(canonical);
+      var smMatch = calcSm.toLowerCase() === onSm;
+      setText('sm-calc', '0x' + calcSm);
+      setCheck('chk-sm', 'd-sm', smMatch,
+        smMatch ? '本地计算 SM3 与链上存证一致' : '本地计算 SM3 与链上存证不一致');
+
+      // 4. ECDSA 验签
+      var message = '0x' + calcSha;
+      setText('sig-msg', message);
+      setText('sig-val', sig.signature || veg.signature);
+      setText('sig-signer', sig.signerAddress);
+
+      var sigValid = false;
+      var recovered = '';
+      if (window.ethers && typeof window.ethers.verifyMessage === 'function') {
+        try {
+          recovered = window.ethers.verifyMessage(message, sig.signature || veg.signature);
+          sigValid = recovered.toLowerCase() === (sig.signerAddress || '').toLowerCase();
+          setText('sig-recovered', recovered);
+          setCheck('chk-sig', 'd-sig', sigValid,
+            sigValid ? '签名者地址恢复成功，与预期一致' : '签名者地址与预期不一致');
+        } catch (e) {
+          setText('sig-recovered', '验签异常');
+          setCheck('chk-sig', 'd-sig', false, '签名验证异常：' + e.message);
+        }
+      } else {
+        setText('sig-recovered', 'ethers.js 未加载');
+        setCheck('chk-sig', 'd-sig', false, 'ethers.js 未加载，无法验证签名');
+      }
+
+      // 最终结论
+      var isVerified = shaMatch && smMatch && sigValid;
+      showVerdict(isVerified, isVerified
+        ? '数据完整性验证通过，当前数据与区块链存证一致。'
+        : '数据完整性验证失败，当前数据与区块链存证不一致。');
+
+      function showVerdict(ok, msg) {
+        var box = document.getElementById('verdictBox');
+        var icon = document.getElementById('verdictIcon');
+        var text = document.getElementById('verdictText');
+        var sub = document.getElementById('verdictSub');
+        box.className = 'verdict ' + (ok ? 'pass' : 'fail');
+        icon.textContent = ok ? '✅' : '❌';
+        text.innerHTML = (ok ? '数据完整性验证通过' : '数据完整性验证失败') +
+          '<small>' + msg + '</small>';
+      }
+    })();
+  </script>
+</body>
+</html>
