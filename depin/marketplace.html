@@ -1,0 +1,469 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#0a0e1a" />
+  <title>数据交易市场 · DePIN · VegetableChain</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg-deep: #05070f;
+      --glow-green: #00ff88;
+      --glow-cyan: #00d4ff;
+      --glow-gold: #ffd700;
+      --glow-orange: #ff8c00;
+      --glow-purple: #a855f7;
+      --glow-red: #ff4757;
+      --text-primary: #e8f0ff;
+      --text-secondary: #8fa3c7;
+      --text-muted: #4a5a7a;
+      --glass-bg: rgba(15, 22, 38, 0.6);
+      --glass-border: rgba(0, 212, 255, 0.18);
+    }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif;
+      color: var(--text-primary); background: var(--bg-deep);
+      min-height: 100vh; overflow-x: hidden; position: relative;
+    }
+    #bg-canvas { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 0; pointer-events: none; }
+    .container { position: relative; z-index: 10; max-width: 1200px; margin: 0 auto; padding: 0 20px; }
+
+    .nav { display: flex; align-items: center; justify-content: space-between; padding: 18px 0; position: relative; }
+    .nav::after { content: ""; position: absolute; bottom: 0; left: 0; right: 0; height: 1px; background: linear-gradient(90deg, transparent, var(--glass-border), transparent); }
+    .logo { display: flex; align-items: center; gap: 12px; }
+    .logo-mark {
+      width: 38px; height: 38px; border-radius: 10px;
+      background: linear-gradient(135deg, var(--glow-green), var(--glow-cyan));
+      display: flex; align-items: center; justify-content: center;
+      font-size: 18px; color: #05070d; font-weight: 900;
+      box-shadow: 0 0 20px rgba(0, 255, 136, 0.4);
+    }
+    .logo-text { font-size: 18px; font-weight: 800; letter-spacing: 2px; background: linear-gradient(135deg, var(--glow-green), var(--glow-cyan)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+    .logo-badge {
+      padding: 4px 12px; border-radius: 999px; font-size: 10px; font-weight: 700; letter-spacing: 1px;
+      background: linear-gradient(135deg, rgba(255, 140, 0, 0.2), rgba(255, 215, 0, 0.2));
+      border: 1px solid rgba(255, 215, 0, 0.4); color: var(--glow-gold);
+    }
+    .nav-links { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+    .nav-links a { color: var(--text-secondary); text-decoration: none; font-size: 12px; padding: 7px 14px; border-radius: 8px; border: 1px solid transparent; transition: all 0.3s; }
+    .nav-links a:hover { color: var(--glow-cyan); border-color: var(--glass-border); background: rgba(0,212,255,0.06); }
+    .nav-links a.active { color: var(--glow-gold); border-color: rgba(255, 215, 0, 0.3); background: rgba(255, 215, 0, 0.08); }
+
+    .page-hero { padding: 28px 0 24px; text-align: center; }
+    .hero-tag {
+      display: inline-block; padding: 5px 18px; border-radius: 999px;
+      font-size: 11px; font-weight: 700; letter-spacing: 2px;
+      background: rgba(255, 215, 0, 0.1); border: 1px solid rgba(255, 215, 0, 0.35);
+      color: var(--glow-gold); margin-bottom: 14px;
+    }
+    .page-title {
+      font-size: clamp(28px, 5vw, 44px); font-weight: 900;
+      background: linear-gradient(135deg, var(--glow-gold), var(--glow-orange));
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+      margin-bottom: 10px;
+    }
+    .page-sub { color: var(--text-secondary); font-size: 14px; max-width: 560px; margin: 0 auto; }
+
+    .market-stats {
+      display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px;
+      margin: 30px 0;
+    }
+    @media (max-width: 800px) { .market-stats { grid-template-columns: repeat(2, 1fr); } }
+    .mstat-card {
+      background: var(--glass-bg); backdrop-filter: blur(20px);
+      border: 1px solid var(--glass-border); border-radius: 14px;
+      padding: 18px; text-align: center; position: relative; overflow: hidden;
+    }
+    .mstat-card::before { content: ""; position: absolute; top: 0; left: 0; right: 0; height: 2px; }
+    .mstat-card.gold::before { background: linear-gradient(90deg, transparent, var(--glow-gold), transparent); }
+    .mstat-card.green::before { background: linear-gradient(90deg, transparent, var(--glow-green), transparent); }
+    .mstat-card.cyan::before { background: linear-gradient(90deg, transparent, var(--glow-cyan), transparent); }
+    .mstat-card.purple::before { background: linear-gradient(90deg, transparent, var(--glow-purple), transparent); }
+    .mstat-card .num {
+      font-size: 26px; font-weight: 900; font-family: monospace;
+      background: linear-gradient(135deg, var(--glow-gold), var(--glow-orange));
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+    }
+    .mstat-card.green .num { background: linear-gradient(135deg, var(--glow-green), var(--glow-cyan)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+    .mstat-card.cyan .num { background: linear-gradient(135deg, var(--glow-cyan), #6ee7ff); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+    .mstat-card.purple .num { background: linear-gradient(135deg, var(--glow-purple), var(--glow-cyan)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+    .mstat-card .label { font-size: 11px; color: var(--text-muted); margin-top: 4px; letter-spacing: 1px; }
+
+    /* 数据产品卡片 */
+    .section-title {
+      display: flex; align-items: center; gap: 10px;
+      font-size: 16px; font-weight: 700; color: var(--glow-cyan);
+      margin: 24px 0 18px;
+    }
+    .section-title::before {
+      content: ""; width: 3px; height: 16px;
+      background: linear-gradient(180deg, var(--glow-green), var(--glow-cyan)); border-radius: 2px;
+    }
+
+    .products-grid {
+      display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px;
+      margin-bottom: 30px;
+    }
+    @media (max-width: 900px) { .products-grid { grid-template-columns: repeat(2, 1fr); } }
+    @media (max-width: 600px) { .products-grid { grid-template-columns: 1fr; } }
+
+    .product-card {
+      background: var(--glass-bg); backdrop-filter: blur(20px);
+      border: 1px solid var(--glass-border); border-radius: 16px;
+      padding: 22px; transition: all 0.3s;
+      position: relative; overflow: hidden;
+    }
+    .product-card:hover {
+      transform: translateY(-4px);
+      border-color: rgba(255, 215, 0, 0.4);
+      box-shadow: 0 12px 40px rgba(255, 215, 0, 0.15);
+    }
+    .product-card::before {
+      content: ""; position: absolute; top: 0; left: 0; right: 0; height: 2px;
+      background: linear-gradient(90deg, transparent, var(--glow-gold), transparent);
+      opacity: 0; transition: opacity 0.3s;
+    }
+    .product-card:hover::before { opacity: 1; }
+
+    .product-head { display: flex; align-items: center; gap: 12px; margin-bottom: 14px; }
+    .product-icon {
+      width: 48px; height: 48px; border-radius: 12px;
+      background: linear-gradient(135deg, rgba(255, 215, 0, 0.15), rgba(255, 140, 0, 0.1));
+      border: 1px solid rgba(255, 215, 0, 0.3);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 24px; flex-shrink: 0;
+    }
+    .product-name { font-size: 16px; font-weight: 700; color: var(--text-primary); margin-bottom: 2px; }
+    .product-seller { font-size: 11px; color: var(--text-muted); }
+
+    .product-desc {
+      color: var(--text-secondary); font-size: 12px; line-height: 1.7;
+      margin-bottom: 14px; min-height: 60px;
+    }
+
+    .product-meta {
+      display: flex; justify-content: space-between;
+      padding: 10px 0; border-top: 1px solid var(--glass-border);
+      border-bottom: 1px solid var(--glass-border);
+      margin-bottom: 14px; font-size: 11px;
+    }
+    .meta-item .ml { color: var(--text-muted); margin-bottom: 3px; }
+    .meta-item .mv { color: var(--text-primary); font-weight: 600; font-family: monospace; }
+    .meta-item .mv.green { color: var(--glow-green); }
+
+    .product-foot { display: flex; justify-content: space-between; align-items: center; }
+    .price {
+      font-size: 22px; font-weight: 900; font-family: monospace;
+      background: linear-gradient(135deg, var(--glow-gold), var(--glow-orange));
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+    }
+    .price .unit { font-size: 11px; font-weight: 500; }
+    .buy-btn {
+      padding: 8px 18px; border-radius: 8px; font-size: 12px; font-weight: 700;
+      background: linear-gradient(135deg, var(--glow-gold), var(--glow-orange));
+      color: #05070d; border: none; cursor: pointer; transition: all 0.3s;
+    }
+    .buy-btn:hover { transform: translateY(-1px); box-shadow: 0 4px 15px rgba(255, 215, 0, 0.4); }
+
+    /* 交易流程 */
+    .flow-section {
+      background: var(--glass-bg); backdrop-filter: blur(20px);
+      border: 1px solid var(--glass-border); border-radius: 16px;
+      padding: 30px; margin-bottom: 30px; position: relative; overflow: hidden;
+    }
+    .flow-section::before {
+      content: ""; position: absolute; top: 0; left: 0; right: 0; height: 2px;
+      background: linear-gradient(90deg, transparent, var(--glow-green), var(--glow-cyan), transparent);
+    }
+    .flow-steps {
+      display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px;
+      margin-top: 20px;
+    }
+    @media (max-width: 800px) { .flow-steps { grid-template-columns: repeat(2, 1fr); } }
+    .flow-step { text-align: center; }
+    .flow-step .icon {
+      width: 56px; height: 56px; border-radius: 50%; margin: 0 auto 10px;
+      background: linear-gradient(135deg, rgba(0, 255, 136, 0.15), rgba(0, 212, 255, 0.1));
+      border: 1px solid rgba(0, 255, 136, 0.3);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 24px;
+    }
+    .flow-step h4 { font-size: 13px; margin-bottom: 4px; }
+    .flow-step p { font-size: 11px; color: var(--text-muted); line-height: 1.5; }
+
+    .btn-row { display: flex; gap: 12px; flex-wrap: wrap; justify-content: center; margin-top: 10px; }
+    .btn {
+      padding: 12px 22px; border-radius: 10px; font-size: 13px; font-weight: 700;
+      text-decoration: none; border: none; cursor: pointer; transition: all 0.3s;
+      display: inline-flex; align-items: center; gap: 6px;
+    }
+    .btn-primary { background: linear-gradient(135deg, var(--glow-green), var(--glow-cyan)); color: #05070d; box-shadow: 0 4px 20px rgba(0, 212, 255, 0.3); }
+    .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 6px 30px rgba(0, 255, 136, 0.4); }
+    .btn-gold { background: linear-gradient(135deg, var(--glow-gold), var(--glow-orange)); color: #05070d; box-shadow: 0 4px 20px rgba(255, 215, 0, 0.3); }
+    .btn-gold:hover { transform: translateY(-2px); box-shadow: 0 6px 30px rgba(255, 140, 0, 0.4); }
+    .btn-glass { background: var(--glass-bg); backdrop-filter: blur(10px); color: var(--glow-cyan); border: 1px solid var(--glass-border); }
+    .btn-glass:hover { background: rgba(0, 212, 255, 0.1); border-color: var(--glow-cyan); }
+
+    .footer { padding: 30px 0; text-align: center; color: var(--text-muted); font-size: 11px; border-top: 1px solid var(--glass-border); margin-top: 20px; }
+    .footer a { color: var(--glow-cyan); text-decoration: none; }
+  </style>
+</head>
+<body>
+  <canvas id="bg-canvas"></canvas>
+  <div class="container">
+    <nav class="nav">
+      <div class="logo">
+        <div class="logo-mark">V</div>
+        <span class="logo-text">VEGETABLECHAIN</span>
+        <span class="logo-badge">DePIN</span>
+      </div>
+      <div class="nav-links">
+        <a href="./index.html">物联网</a>
+        <a href="./sensor.html">传感器</a>
+        <a href="./marketplace.html" class="active">数据市场</a>
+        <a href="../scifi/index.html">科幻版 ↗</a>
+      </div>
+    </nav>
+
+    <div class="page-hero">
+      <div class="hero-tag">DATA MARKETPLACE</div>
+      <h1 class="page-title">农业数据交易市场</h1>
+      <p class="page-sub">数据即资产 · 链上确权 · 隐私计算 · 可用不可见</p>
+    </div>
+
+    <!-- 市场统计 -->
+    <div class="market-stats">
+      <div class="mstat-card gold">
+        <div class="num">¥ 2.48M</div>
+        <div class="label">总交易额</div>
+      </div>
+      <div class="mstat-card green">
+        <div class="num">1,284</div>
+        <div class="label">在售数据产品</div>
+      </div>
+      <div class="mstat-card cyan">
+        <div class="num">476</div>
+        <div class="label">数据供方</div>
+      </div>
+      <div class="mstat-card purple">
+        <div class="num">892</div>
+        <div class="label">数据需方</div>
+      </div>
+    </div>
+
+    <div class="section-title">🔥 热门数据产品</div>
+
+    <div class="products-grid">
+      <div class="product-card">
+        <div class="product-head">
+          <div class="product-icon">🌡</div>
+          <div>
+            <div class="product-name">全国温度数据集</div>
+            <div class="product-seller">数据供方：寿光联盟农场</div>
+          </div>
+        </div>
+        <div class="product-desc">
+          全国 128 个温感节点的历史温度数据，覆盖 32 个农业主产区，时间跨度 2 年，每 5 分钟一条记录。
+        </div>
+        <div class="product-meta">
+          <div class="meta-item"><div class="ml">数据量</div><div class="mv green">2800万条</div></div>
+          <div class="meta-item"><div class="ml">更新频率</div><div class="mv">实时</div></div>
+          <div class="meta-item"><div class="ml">已售</div><div class="mv">186 次</div></div>
+        </div>
+        <div class="product-foot">
+          <div class="price">2,880 <span class="unit">AGRI /年</span></div>
+          <button class="buy-btn">立即购买</button>
+        </div>
+      </div>
+
+      <div class="product-card">
+        <div class="product-head">
+          <div class="product-icon">🌱</div>
+          <div>
+            <div class="product-name">土壤质量数据库</div>
+            <div class="product-seller">数据供方：农科院土肥所</div>
+          </div>
+        </div>
+        <div class="product-desc">
+          全国主要农田土壤 PH、氮磷钾、有机质含量检测数据，含 31 个省 5000+ 采样点，链上存证可验证。
+        </div>
+        <div class="product-meta">
+          <div class="meta-item"><div class="ml">数据量</div><div class="mv green">5.2万条</div></div>
+          <div class="meta-item"><div class="ml">更新频率</div><div class="mv">季度</div></div>
+          <div class="meta-item"><div class="ml">已售</div><div class="mv">94 次</div></div>
+        </div>
+        <div class="product-foot">
+          <div class="price">5,680 <span class="unit">AGRI /年</span></div>
+          <button class="buy-btn">立即购买</button>
+        </div>
+      </div>
+
+      <div class="product-card">
+        <div class="product-head">
+          <div class="product-icon">🚁</div>
+          <div>
+            <div class="product-name">无人机遥感影像</div>
+            <div class="product-seller">数据供方：星空农业科技</div>
+          </div>
+        </div>
+        <div class="product-desc">
+          高分辨率农田无人机多光谱遥感数据，含 NDVI 植被指数，支持作物长势分析、病虫害预警。
+        </div>
+        <div class="product-meta">
+          <div class="meta-item"><div class="ml">覆盖面积</div><div class="mv green">12万亩</div></div>
+          <div class="meta-item"><div class="ml">更新频率</div><div class="mv">每周</div></div>
+          <div class="meta-item"><div class="ml">已售</div><div class="mv">67 次</div></div>
+        </div>
+        <div class="product-foot">
+          <div class="price">8,800 <span class="unit">AGRI /年</span></div>
+          <button class="buy-btn">立即购买</button>
+        </div>
+      </div>
+
+      <div class="product-card">
+        <div class="product-head">
+          <div class="product-icon">☔</div>
+          <div>
+            <div class="product-name">气象预报数据集</div>
+            <div class="product-seller">数据供方：气象数据联盟</div>
+          </div>
+        </div>
+        <div class="product-desc">
+          精细化农业气象数据，含温度、降水、风速、光照等 12 项指标，未来 7 天预报 + 历史 10 年。
+        </div>
+        <div class="product-meta">
+          <div class="meta-item"><div class="ml">数据点</div><div class="mv green">2800+</div></div>
+          <div class="meta-item"><div class="ml">更新频率</div><div class="mv">每小时</div></div>
+          <div class="meta-item"><div class="ml">已售</div><div class="mv">213 次</div></div>
+        </div>
+        <div class="product-foot">
+          <div class="price">1,680 <span class="unit">AGRI /年</span></div>
+          <button class="buy-btn">立即购买</button>
+        </div>
+      </div>
+
+      <div class="product-card">
+        <div class="product-head">
+          <div class="product-icon">🐛</div>
+          <div>
+            <div class="product-name">病虫害AI模型</div>
+            <div class="product-seller">数据供方：AI 农业实验室</div>
+          </div>
+        </div>
+        <div class="product-desc">
+          基于链上数据训练的番茄病虫害识别 AI 模型，支持 20 种常见病害，准确率 96.5%，推理结果可上链验证。
+        </div>
+        <div class="product-meta">
+          <div class="meta-item"><div class="ml">病害种类</div><div class="mv green">20 种</div></div>
+          <div class="meta-item"><div class="ml">准确率</div><div class="mv">96.5%</div></div>
+          <div class="meta-item"><div class="ml">调用次数</div><div class="mv">1.2万次</div></div>
+        </div>
+        <div class="product-foot">
+          <div class="price">0.5 <span class="unit">AGRI /次</span></div>
+          <button class="buy-btn">立即购买</button>
+        </div>
+      </div>
+
+      <div class="product-card">
+        <div class="product-head">
+          <div class="product-icon">📊</div>
+          <div>
+            <div class="product-name">产量预测报告</div>
+            <div class="product-seller">数据供方：农业大数据中心</div>
+          </div>
+        </div>
+        <div class="product-desc">
+          基于链上多源数据的农产品产量预测报告，含全国及分省预测，月度更新，数据来源全部链上可验证。
+        </div>
+        <div class="product-meta">
+          <div class="meta-item"><div class="ml">覆盖作物</div><div class="mv green">12 种</div></div>
+          <div class="meta-item"><div class="ml">更新频率</div><div class="mv">月度</div></div>
+          <div class="meta-item"><div class="ml">已售</div><div class="mv">158 次</div></div>
+        </div>
+        <div class="product-foot">
+          <div class="price">3,200 <span class="unit">AGRI /年</span></div>
+          <button class="buy-btn">立即购买</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 交易流程 -->
+    <div class="flow-section">
+      <div class="section-title" style="margin-top:0;">🔄 数据交易流程 // TRADE FLOW</div>
+      <div class="flow-steps">
+        <div class="flow-step">
+          <div class="icon">📤</div>
+          <h4>数据上链</h4>
+          <p>传感器数据自动上链，生成哈希存证</p>
+        </div>
+        <div class="flow-step">
+          <div class="icon">🏷</div>
+          <h4>确权定价</h4>
+          <p>数据所有权链上确认，供方定价</p>
+        </div>
+        <div class="flow-step">
+          <div class="icon">🛒</div>
+          <h4>下单购买</h4>
+          <p>需方支付 AGRI Token 智能合约托管</p>
+        </div>
+        <div class="flow-step">
+          <div class="icon">🔒</div>
+          <h4>隐私计算</h4>
+          <p>数据可用不可见，保护原始数据</p>
+        </div>
+        <div class="flow-step">
+          <div class="icon">💰</div>
+          <h4>结算分账</h4>
+          <p>智能合约自动结算，链上可追溯</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="btn-row">
+      <a href="./index.html" class="btn btn-glass">← 返回物联网</a>
+      <a href="./sensor.html" class="btn btn-primary">查看传感器详情 →</a>
+      <a href="../scifi/index.html" class="btn btn-glass">科幻版</a>
+    </div>
+
+    <footer class="footer">
+      <p>VegetableChain · DePIN 农业物联网 Demo</p>
+      <p style="margin-top:6px;">数据要素市场 · 链上确权 · 隐私计算 · 智能合约结算</p>
+    </footer>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js"></script>
+  <script>
+    // 背景星空
+    (function() {
+      const canvas = document.getElementById('bg-canvas');
+      const scene = new THREE.Scene();
+      const camera = new THREE.PerspectiveCamera(75, innerWidth / innerHeight, 0.1, 1000);
+      camera.position.z = 1;
+      const renderer = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: false });
+      renderer.setPixelRatio(Math.min(devicePixelRatio, 1.5));
+      renderer.setSize(innerWidth, innerHeight);
+      const N = 450;
+      const pos = new Float32Array(N * 3);
+      const col = new Float32Array(N * 3);
+      for (let i = 0; i < N; i++) {
+        pos[i*3] = (Math.random()-0.5)*4; pos[i*3+1] = (Math.random()-0.5)*3; pos[i*3+2] = Math.random()*-2;
+        const r = Math.random();
+        if (r < 0.5) { col[i*3]=1; col[i*3+1]=0.84; col[i*3+2]=0; }
+        else if (r < 0.8) { col[i*3]=0; col[i*3+1]=1; col[i*3+2]=0.53; }
+        else { col[i*3]=0.7; col[i*3+1]=0.85; col[i*3+2]=1; }
+      }
+      const geo = new THREE.BufferGeometry();
+      geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+      geo.setAttribute('color', new THREE.BufferAttribute(col, 3));
+      const mat = new THREE.PointsMaterial({ size: 0.006, vertexColors: true, transparent: true, opacity: 0.7 });
+      const stars = new THREE.Points(geo, mat);
+      scene.add(stars);
+      let t = 0;
+      function anim() { requestAnimationFrame(anim); t += 0.0002; stars.rotation.y = t; renderer.render(scene, camera); }
+      anim();
+      addEventListener('resize', () => { camera.aspect = innerWidth/innerHeight; camera.updateProjectionMatrix(); renderer.setSize(innerWidth, innerHeight); });
+    })();
+  </script>
+</body>
+</html>
