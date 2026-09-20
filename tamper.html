@@ -3,23 +3,26 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  <meta name="theme-color" content="#2e7d32" />
-  <title>篡改实验 - VegetableChain</title>
+  <meta name="theme-color" content="#050810" />
+  <title>篡改实验 // VegetableChain</title>
   <link rel="stylesheet" href="./style.css" />
 </head>
 <body>
+  <!-- 扫描线动画 -->
+  <div class="scan-line"></div>
+
+  <!-- 顶部导航 -->
   <nav class="navbar">
     <div class="nav-inner">
       <a class="nav-brand" href="./index.html"><span class="brand-logo">蔬</span> VegetableChain</a>
       <button class="nav-toggle" onclick="document.getElementById('navlinks').classList.toggle('open')">☰</button>
       <div class="nav-links" id="navlinks">
         <a class="nav-link" href="./index.html">首页</a>
-        <a class="nav-link" href="./create.html">创建档案</a>
-        <a class="nav-link" href="./detail.html">档案详情</a>
+        <a class="nav-link" href="./detail.html">番茄档案</a>
+        <a class="nav-link" href="./verify.html">扫码验证</a>
+        <a class="nav-link active" href="./tamper.html">篡改实验</a>
         <a class="nav-link" href="./certificate.html">存证证书</a>
         <a class="nav-link" href="./qrcode.html">二维码</a>
-        <a class="nav-link" href="./verify.html">验证</a>
-        <a class="nav-link active" href="./tamper.html">篡改实验</a>
       </div>
     </div>
   </nav>
@@ -117,8 +120,8 @@
   </main>
 
   <footer class="footer">
-    <div class="foot-tags"><span class="tag tag-warning">模拟实验数据</span></div>
-    VegetableChain · 篡改实验 · 哈希在浏览器本地真实计算
+    <div class="foot-tags"><span class="tag tag-warning">SIMULATED DATA</span></div>
+    VegetableChain // 篡改实验 // 哈希在浏览器本地真实计算
   </footer>
 
   <script src="./blockchain-data.js"></script>

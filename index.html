@@ -3,11 +3,14 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  <meta name="theme-color" content="#2e7d32" />
-  <title>VegetableChain - 番茄区块链溯源体验</title>
+  <meta name="theme-color" content="#050810" />
+  <title>VegetableChain // 番茄区块链溯源终端</title>
   <link rel="stylesheet" href="./style.css" />
 </head>
 <body>
+  <!-- 扫描线动画 -->
+  <div class="scan-line"></div>
+
   <!-- 顶部导航 -->
   <nav class="navbar">
     <div class="nav-inner">
@@ -27,48 +30,48 @@
   <main class="page">
     <div class="container">
 
-      <!-- Hero 区域 -->
+      <!-- Hero -->
       <section class="hero">
-        <span class="hero-badge">🌱 区块链溯源 Demo · 模拟实验</span>
+        <span class="hero-badge">⚡ BLOCKCHAIN TRACEABILITY · 模拟实验</span>
         <h1 class="hero-title">给番茄办一张<br/>"区块链身份证"</h1>
         <p class="hero-subtitle">每一颗番茄从播种到餐桌，全程上链存证。<br/>扫一扫，就能知道它是不是真的。</p>
         <div class="hero-actions">
-          <a class="btn btn-primary" href="#steps">👇 开始体验</a>
-          <a class="btn btn-secondary" href="./tamper.html">🧪 试试篡改实验</a>
+          <a class="btn btn-primary" href="#steps">▶ 开始体验</a>
+          <a class="btn btn-secondary" href="./tamper.html">🧪 篡改实验</a>
         </div>
         <div class="hero-tomato">🍅</div>
       </section>
 
-      <!-- 快速数据概览 -->
+      <!-- 终端状态条 -->
       <section class="stats-bar">
         <div class="stat-item">
-          <div class="stat-num" id="stat-block">#2</div>
-          <div class="stat-label">区块高度</div>
+          <div class="stat-num glitch" id="stat-block">#2</div>
+          <div class="stat-label">BLOCK</div>
         </div>
         <div class="stat-divider"></div>
         <div class="stat-item">
           <div class="stat-num">273,788</div>
-          <div class="stat-label">Gas 消耗</div>
+          <div class="stat-label">GAS USED</div>
         </div>
         <div class="stat-divider"></div>
         <div class="stat-item">
-          <div class="stat-num">双哈希</div>
+          <div class="stat-num">DUAL</div>
           <div class="stat-label">SHA-256 + SM3</div>
         </div>
         <div class="stat-divider"></div>
         <div class="stat-item">
           <div class="stat-num">✅</div>
-          <div class="stat-label">验证通过</div>
+          <div class="stat-label">VERIFIED</div>
         </div>
       </section>
 
       <!-- 体验步骤 -->
-      <h2 class="section-title" id="steps">跟着这 4 步，玩转区块链溯源</h2>
+      <h2 class="section-title" id="steps">// 跟着这 4 步，玩转区块链溯源</h2>
       <div class="steps">
 
         <!-- 第 1 步 -->
         <div class="step-card">
-          <div class="step-num">1</div>
+          <div class="step-num">01</div>
           <div class="step-body">
             <div class="step-title">看看这颗番茄的"档案"</div>
             <div class="step-desc">
@@ -89,22 +92,21 @@
 
         <!-- 第 2 步 -->
         <div class="step-card">
-          <div class="step-num">2</div>
+          <div class="step-num">02</div>
           <div class="step-body">
             <div class="step-title">数据被"盖章"存到区块链上</div>
             <div class="step-desc">
               番茄的所有信息会被计算成一串独一无二的"指纹"（哈希值），
-              再用数字签名盖章，最后存到区块链上。
-              一旦上链，就再也改不了啦！
+              再用数字签名盖章，最后存到区块链上。一旦上链，就再也改不了啦！
             </div>
             <div class="hash-demo">
-              <div class="hash-label">📝 原始数据</div>
+              <div class="hash-label">[DATA] 原始数据</div>
               <div class="hash-arrow">↓ SHA-256 计算</div>
               <div class="hash-value mono" id="demo-hash">0xaf08d84a...18b5</div>
-              <div class="hash-arrow">↓ 数字签名盖章</div>
+              <div class="hash-arrow">↓ ECDSA 数字签名</div>
               <div class="hash-value mono sig" id="demo-sig">0x05a2dacf...68311b</div>
               <div class="hash-arrow">↓ 上链存证</div>
-              <div class="chain-icon">⛓ 区块链 · 交易已确认</div>
+              <div class="chain-icon">⛓ BLOCKCHAIN · TX CONFIRMED</div>
             </div>
             <a class="btn btn-secondary btn-sm" href="./certificate.html">查看存证证书 →</a>
           </div>
@@ -112,19 +114,18 @@
 
         <!-- 第 3 步 -->
         <div class="step-card">
-          <div class="step-num">3</div>
+          <div class="step-num">03</div>
           <div class="step-body">
             <div class="step-title">扫一扫，验证真假</div>
             <div class="step-desc">
               买番茄的时候，扫一下二维码，手机会自动重新计算哈希，
-              然后跟区块链上的指纹比对。
-              如果一模一样，说明数据没被改过，可以放心吃！
+              然后跟区块链上的指纹比对。如果一模一样，说明数据没被改过，可以放心吃！
             </div>
             <div class="verify-demo">
               <div class="verify-box">
                 <div class="verify-icon">✅</div>
                 <div class="verify-text">
-                  <strong>验证通过</strong>
+                  <strong>VERIFICATION PASSED</strong>
                   <small>数据与区块链存证一致</small>
                 </div>
               </div>
@@ -135,7 +136,7 @@
 
         <!-- 第 4 步 -->
         <div class="step-card danger">
-          <div class="step-num">4</div>
+          <div class="step-num">04</div>
           <div class="step-body">
             <div class="step-title">试试：数据被篡改会怎样？</div>
             <div class="step-desc">
@@ -152,7 +153,7 @@
                 <span class="tamper-val bad">3860kg</span>
               </div>
               <div class="tamper-result">
-                ❌ 哈希不一致 · 验证失败
+                ❌ HASH MISMATCH · VERIFICATION FAILED
               </div>
             </div>
             <a class="btn btn-danger btn-sm" href="./tamper.html">点我做实验 →</a>
@@ -162,28 +163,28 @@
       </div>
 
       <!-- 区块链凭证 -->
-      <h2 class="section-title">真实区块链数据</h2>
+      <h2 class="section-title">// 真实区块链数据</h2>
       <div class="grid grid-2">
         <div class="card">
           <div class="card-header">
             <span class="ch-icon">⛓</span>
-            <h3>链上交易信息</h3>
+            <h3>ON-CHAIN TRANSACTION</h3>
           </div>
           <div class="card-body">
             <div class="data-row stacked">
-              <div class="data-label">交易哈希 (Tx Hash)</div>
+              <div class="data-label">TX HASH</div>
               <div class="data-value mono small" id="txHash">—</div>
             </div>
             <div class="data-row">
-              <div class="data-label">区块高度</div>
+              <div class="data-label">BLOCK</div>
               <div class="data-value"><span class="tag tag-success" id="blockNumber">—</span></div>
             </div>
             <div class="data-row">
-              <div class="data-label">合约地址</div>
+              <div class="data-label">CONTRACT</div>
               <div class="data-value mono small" id="contractAddress">—</div>
             </div>
             <div class="data-row">
-              <div class="data-label">网络</div>
+              <div class="data-label">NETWORK</div>
               <div class="data-value" id="networkName">—</div>
             </div>
           </div>
@@ -191,26 +192,26 @@
         <div class="card">
           <div class="card-header">
             <span class="ch-icon">🔐</span>
-            <h3>哈希指纹</h3>
+            <h3>HASH FINGERPRINT</h3>
           </div>
           <div class="card-body">
             <div class="data-row stacked">
-              <div class="data-label">SHA-256（国际标准）</div>
+              <div class="data-label">SHA-256</div>
               <div class="data-value mono small hash-box muted-bg" id="shaHash">—</div>
             </div>
             <div class="data-row stacked">
-              <div class="data-label">SM3（国密标准）</div>
+              <div class="data-label">SM3 (国密)</div>
               <div class="data-value mono small hash-box muted-bg" id="smHash">—</div>
             </div>
             <div class="data-row">
-              <div class="data-label">双哈希验证</div>
-              <div class="data-value"><span class="status status-pass"><span class="dot pass"></span>一致</span></div>
+              <div class="data-label">DUAL HASH</div>
+              <div class="data-value"><span class="status status-pass"><span class="dot pass"></span>MATCH</span></div>
             </div>
           </div>
         </div>
       </div>
 
-      <!-- 底部操作区 -->
+      <!-- CTA -->
       <div class="cta-box">
         <div class="cta-text">
           <h3>准备好了吗？</h3>
@@ -220,16 +221,16 @@
       </div>
 
       <div class="note mt-3">
-        <strong>说明：</strong> 本 Demo 为<strong>模拟实验</strong>演示项目，区块链数据来自真实 EVM 网络计算，农场数据为模拟实验数据，仅用于展示可信溯源技术原理。
+        <strong>[NOTE]</strong> 本 Demo 为<strong>模拟实验</strong>演示项目，区块链数据来自真实 EVM 网络计算，农场数据为模拟实验数据，仅用于展示可信溯源技术原理。
       </div>
 
     </div>
   </main>
 
   <footer class="footer">
-    <div class="foot-tags"><span class="tag tag-warning">模拟实验数据</span></div>
-    VegetableChain · 蔬菜数字身份与可信溯源系统<br/>
-    基于区块链 · SHA-256 · 国密 SM3 · ECDSA 数字签名
+    <div class="foot-tags"><span class="tag tag-warning">SIMULATED DATA</span></div>
+    VegetableChain // 蔬菜数字身份与可信溯源系统<br/>
+    BLOCKCHAIN · SHA-256 · SM3 · ECDSA
   </footer>
 
   <script src="./blockchain-data.js"></script>
@@ -245,14 +246,13 @@
       function setText(id, v) { var el = document.getElementById(id); if (el && v != null) el.textContent = v; }
 
       setText('txHash', tx.hash);
-      setText('blockNumber', tx.blockNumber != null ? ('区块 #' + tx.blockNumber) : '—');
+      setText('blockNumber', tx.blockNumber != null ? ('BLOCK #' + tx.blockNumber) : '—');
       setText('contractAddress', con.address);
       setText('networkName', net.name);
       setText('shaHash', veg.sha256Hash);
       setText('smHash', veg.sm3Hash);
       setText('stat-block', tx.blockNumber != null ? ('#' + tx.blockNumber) : '—');
 
-      // 演示哈希截取
       if (veg.sha256Hash) {
         var h = veg.sha256Hash;
         setText('demo-hash', h.substring(0, 12) + '...' + h.substring(h.length - 4));
