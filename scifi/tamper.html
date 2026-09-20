@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#090d16" />
+  <title>篡改实验 · VegetableChain Sci-Fi</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg-deep: #05070d;
+      --glow-green: #39ff7a;
+      --glow-cyan: #00d4ff;
+      --glow-gold: #c9a961;
+      --glow-red: #ff5577;
+      --text-primary: #e8f0ff;
+      --text-secondary: #8fa3c7;
+      --text-muted: #4a5a7a;
+      --glass-bg: rgba(15, 22, 38, 0.55);
+      --glass-border: rgba(100, 160, 255, 0.15);
+    }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif;
+      color: var(--text-primary); background: var(--bg-deep);
+      min-height: 100vh; overflow-x: hidden; position: relative;
+    }
+    #bg-canvas { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 0; pointer-events: none; }
+    .grid-overlay {
+      position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 1; pointer-events: none;
+      background-image: linear-gradient(rgba(255, 85, 119, 0.02) 1px, transparent 1px), linear-gradient(90deg, rgba(255, 85, 119, 0.02) 1px, transparent 1px);
+      background-size: 50px 50px;
+    }
+    .container { position: relative; z-index: 10; max-width: 800px; margin: 0 auto; padding: 0 20px; }
+    .nav { display: flex; align-items: center; justify-content: space-between; padding: 20px 0; position: relative; }
+    .nav::after { content: ""; position: absolute; bottom: 0; left: 0; right: 0; height: 1px; background: linear-gradient(90deg, transparent, var(--glass-border), transparent); }
+    .logo { display: flex; align-items: center; gap: 10px; font-size: 16px; font-weight: 800; letter-spacing: 2px; }
+    .logo-mark { width: 32px; height: 32px; border-radius: 8px; background: linear-gradient(135deg, var(--glow-green), var(--glow-cyan)); display: flex; align-items: center; justify-content: center; font-size: 16px; color: #05070d; font-weight: 900; box-shadow: 0 0 15px rgba(57, 255, 122, 0.4); }
+    .logo-text { background: linear-gradient(135deg, var(--glow-green), var(--glow-cyan)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+    .nav-right a { color: var(--text-secondary); text-decoration: none; font-size: 12px; padding: 7px 14px; border-radius: 7px; border: 1px solid transparent; transition: all 0.3s; margin-left: 4px; }
+    .nav-right a:hover { color: var(--glow-cyan); border-color: var(--glass-border); background: rgba(0,212,255,0.08); }
+
+    .page-header { padding: 28px 0 20px; text-align: center; }
+    .page-tag { display: inline-block; padding: 5px 16px; border-radius: 999px; font-size: 11px; font-weight: 700; letter-spacing: 2px; background: rgba(255, 85, 119, 0.1); border: 1px solid rgba(255, 85, 119, 0.35); color: var(--glow-red); margin-bottom: 14px; }
+    .page-title { font-size: clamp(22px, 4vw, 32px); font-weight: 900; background: linear-gradient(135deg, #fff, var(--glow-cyan)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+    .page-sub { color: var(--text-secondary); font-size: 13px; margin-top: 6px; }
+
+    /* 结果面板 */
+    .result-panel {
+      text-align: center; padding: 32px 24px; border-radius: 16px;
+      background: rgba(57, 255, 122, 0.05); border: 1px solid rgba(57, 255, 122, 0.3);
+      margin-bottom: 20px; transition: all 0.4s;
+    }
+    .result-panel.tampered {
+      background: rgba(255, 85, 119, 0.08); border-color: rgba(255, 85, 119, 0.5);
+      animation: shake 0.5s cubic-bezier(0.36, 0.07, 0.19, 0.97);
+    }
+    @keyframes shake {
+      10%, 90% { transform: translateX(-1px); }
+      20%, 80% { transform: translateX(3px); }
+      30%, 50%, 70% { transform: translateX(-6px); }
+      40%, 60% { transform: translateX(6px); }
+    }
+    .result-icon { font-size: 44px; margin-bottom: 8px; }
+    .result-text { font-size: 24px; font-weight: 900; color: var(--glow-green); letter-spacing: 2px; }
+    .result-panel.tampered .result-text { color: var(--glow-red); }
+    .result-desc { color: var(--text-secondary); font-size: 13px; margin-top: 6px; }
+
+    /* 篡改按钮 */
+    .tamper-btn {
+      width: 100%; padding: 18px; font-size: 15px; font-weight: 900; letter-spacing: 3px;
+      background: linear-gradient(135deg, var(--glow-red), #ff8888);
+      color: #fff; border: none; border-radius: 14px; cursor: pointer;
+      box-shadow: 0 6px 30px rgba(255, 85, 119, 0.4);
+      transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+    .tamper-btn:hover { transform: translateY(-2px); box-shadow: 0 8px 40px rgba(255, 85, 119, 0.6); }
+    .tamper-btn.restore {
+      background: linear-gradient(135deg, var(--glow-green), var(--glow-cyan));
+      color: #05070d;
+      box-shadow: 0 6px 30px rgba(57, 255, 122, 0.4);
+    }
+
+    .glass-card {
+      background: var(--glass-bg); backdrop-filter: blur(20px);
+      border: 1px solid var(--glass-border); border-radius: 16px;
+      padding: 24px; margin-top: 24px; position: relative; overflow: hidden;
+    }
+    .glass-card::before { content: ""; position: absolute; top: 0; left: 0; right: 0; height: 2px; background: linear-gradient(90deg, transparent, var(--glow-cyan), var(--glow-green), transparent); }
+    .card-title { display: flex; align-items: center; gap: 10px; font-size: 15px; font-weight: 700; color: var(--glow-cyan); margin-bottom: 16px; letter-spacing: 1px; }
+    .card-title::before { content: ""; width: 3px; height: 16px; border-radius: 2px; background: linear-gradient(180deg, var(--glow-green), var(--glow-cyan)); }
+
+    /* 对比表格 */
+    .compare-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    .compare-table th {
+      text-align: left; padding: 10px 12px; font-size: 10px; text-transform: uppercase;
+      letter-spacing: 1px; color: var(--text-muted); border-bottom: 1px solid var(--glass-border);
+    }
+    .compare-table td {
+      padding: 11px 12px; border-bottom: 1px solid rgba(0, 212, 255, 0.06);
+    }
+    .compare-table td:first-child { color: var(--text-muted); width: 25%; font-size: 12px; }
+    .compare-table td.mono { font-family: monospace; font-size: 11px; }
+    .compare-table .bad { color: var(--glow-red); text-decoration: line-through; opacity: 0.7; }
+    .compare-table .bad-new { color: var(--glow-red); font-weight: 700; }
+    .compare-table .good { color: var(--glow-green); font-weight: 600; }
+
+    .info-box {
+      background: rgba(5, 7, 13, 0.6); border: 1px solid var(--glass-border);
+      border-radius: 12px; padding: 16px; font-size: 13px; color: var(--text-secondary);
+      line-height: 1.8;
+    }
+    .info-box strong { color: var(--glow-red); }
+
+    .btn-row { display: flex; gap: 12px; flex-wrap: wrap; justify-content: center; margin-top: 20px; }
+    .btn { padding: 12px 22px; border-radius: 10px; font-size: 13px; font-weight: 700; text-decoration: none; border: none; cursor: pointer; transition: all 0.3s; display: inline-flex; align-items: center; gap: 6px; }
+    .btn-glass { background: var(--glass-bg); backdrop-filter: blur(10px); color: var(--glow-cyan); border: 1px solid var(--glass-border); }
+    .btn-glass:hover { background: rgba(0, 212, 255, 0.1); border-color: var(--glow-cyan); }
+
+    .footer { padding: 30px 0; text-align: center; color: var(--text-muted); font-size: 11px; border-top: 1px solid var(--glass-border); margin-top: 24px; }
+    .footer a { color: var(--glow-cyan); text-decoration: none; }
+  </style>
+</head>
+<body>
+  <canvas id="bg-canvas"></canvas>
+  <div class="grid-overlay"></div>
+  <div class="container">
+    <nav class="nav">
+      <div class="logo"><div class="logo-mark">V</div><span class="logo-text">VEGETABLECHAIN</span></div>
+      <div class="nav-right">
+        <a href="./detail.html">返回</a>
+        <a href="../tamper.html">标准版 ↗</a>
+      </div>
+    </nav>
+
+    <div class="page-header">
+      <div class="page-tag">TAMPER EXPERIMENT</div>
+      <h1 class="page-title">篡改模拟实验</h1>
+      <p class="page-sub">数据一旦被篡改，哈希验证立即失败</p>
+    </div>
+
+    <div id="resultPanel" class="result-panel">
+      <div class="result-icon">✅</div>
+      <div class="result-text">数据完整</div>
+      <div class="result-desc">当前数据与区块链存证完全一致</div>
+    </div>
+
+    <button id="tamperBtn" class="tamper-btn" onclick="toggleTamper()">
+      ⚠ 模拟篡改数据
+    </button>
+
+    <div class="glass-card">
+      <div class="card-title">数据对比 // DATA COMPARISON</div>
+      <table class="compare-table">
+        <thead>
+          <tr><th>字段</th><th>当前数据</th><th>链上存证</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>采收重量</td>
+            <td id="curWeight">2860 kg</td>
+            <td id="chainWeight">2860 kg</td>
+          </tr>
+          <tr>
+            <td>SHA-256</td>
+            <td id="curSha" class="mono good">—</td>
+            <td id="chainSha" class="mono">—</td>
+          </tr>
+          <tr>
+            <td>SM3 国密</td>
+            <td id="curSm3" class="mono good">—</td>
+            <td id="chainSm3" class="mono">—</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="glass-card">
+      <div class="card-title">实验原理 // PRINCIPLE</div>
+      <div class="info-box">
+        点击上方按钮，模拟有人偷偷把番茄的<strong>采收重量从 2860kg 改成了 3860kg</strong>。
+        <br/><br/>
+        虽然只改了一个数字，但哈希是数据的"指纹"——哪怕只改一个字节，
+        生成的哈希都会完全不同。区块链上存储的是原始数据的哈希，
+        所以验证时会立即发现不一致 —— 这就是区块链防篡改的核心原理。
+      </div>
+    </div>
+
+    <div class="btn-row">
+      <a href="./detail.html" class="btn btn-glass">← 返回档案</a>
+      <a href="./verify.html" class="btn btn-glass">完整验证流程 →</a>
+    </div>
+
+    <footer class="footer">
+      <p>VegetableChain · 科幻版 · 基于 FISCO BCOS 联盟链</p>
+      <p style="margin-top:6px;"><a href="../tamper.html">查看标准版</a></p>
+    </footer>
+  </div>
+
+  <script src="../blockchain-data.js"></script>
+  <script src="../crypto-utils.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js"></script>
+  <script>
+    // 背景星空
+    (function() {
+      const canvas = document.getElementById('bg-canvas');
+      const scene = new THREE.Scene();
+      const camera = new THREE.PerspectiveCamera(75, innerWidth / innerHeight, 0.1, 1000);
+      camera.position.z = 1;
+      const renderer = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: false });
+      renderer.setPixelRatio(Math.min(devicePixelRatio, 1.5));
+      renderer.setSize(innerWidth, innerHeight);
+      const N = 400;
+      const pos = new Float32Array(N * 3);
+      const col = new Float32Array(N * 3);
+      for (let i = 0; i < N; i++) {
+        pos[i*3] = (Math.random()-0.5)*4; pos[i*3+1] = (Math.random()-0.5)*3; pos[i*3+2] = Math.random()*-2;
+        const r = Math.random();
+        if (r < 0.5) { col[i*3]=1; col[i*3+1]=0.33; col[i*3+2]=0.47; }
+        else { col[i*3]=0.7; col[i*3+1]=0.85; col[i*3+2]=1; }
+      }
+      const geo = new THREE.BufferGeometry();
+      geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+      geo.setAttribute('color', new THREE.BufferAttribute(col, 3));
+      const mat = new THREE.PointsMaterial({ size: 0.006, vertexColors: true, transparent: true, opacity: 0.6 });
+      const stars = new THREE.Points(geo, mat);
+      scene.add(stars);
+      let t = 0;
+      function anim() { requestAnimationFrame(anim); t += 0.0003; stars.rotation.y = t; renderer.render(scene, camera); }
+      anim();
+      addEventListener('resize', () => { camera.aspect = innerWidth/innerHeight; camera.updateProjectionMatrix(); renderer.setSize(innerWidth, innerHeight); });
+    })();
+
+    // 篡改逻辑
+    let tampered = false;
+    const D = window.BLOCKCHAIN_DATA;
+    const originalFarm = JSON.parse(JSON.stringify(D.farmData));
+    const chainSha = (D.vegetable.sha256Hash || '').replace(/^0x/, '').toLowerCase();
+    const chainSm3 = (D.vegetable.sm3Hash || '').replace(/^0x/, '').toLowerCase();
+
+    function canonicalJSON(obj) {
+      if (Array.isArray(obj)) return '[' + obj.map(canonicalJSON).join(',') + ']';
+      if (obj !== null && typeof obj === 'object') {
+        const keys = Object.keys(obj).sort();
+        return '{' + keys.map(k => JSON.stringify(k) + ':' + canonicalJSON(obj[k])).join(',') + '}';
+      }
+      return JSON.stringify(obj);
+    }
+
+    async function updateDisplay() {
+      const farm = JSON.parse(JSON.stringify(originalFarm));
+      if (tampered) farm.harvestWeight = '3860kg';
+
+      const canonical = canonicalJSON(farm);
+      const sha = (await window.CryptoUtils.sha256(canonical)).toLowerCase();
+      const sm3 = window.CryptoUtils.sm3(canonical).toLowerCase();
+
+      const shaMatch = sha === chainSha;
+      const sm3Match = sm3 === chainSm3;
+
+      // 重量
+      const curW = document.getElementById('curWeight');
+      const chaW = document.getElementById('chainWeight');
+      curW.textContent = farm.harvestWeight;
+      chaW.textContent = originalFarm.harvestWeight;
+      curW.className = tampered ? 'bad-new' : 'good';
+      chaW.className = tampered ? 'bad' : 'good';
+
+      // SHA
+      const curSha = document.getElementById('curSha');
+      curSha.textContent = sha.substring(0, 24) + '...';
+      curSha.className = 'mono ' + (shaMatch ? 'good' : 'bad-new');
+
+      const chainShaEl = document.getElementById('chainSha');
+      chainShaEl.textContent = chainSha.substring(0, 24) + '...';
+      chainShaEl.className = 'mono';
+
+      // SM3
+      const curSm3 = document.getElementById('curSm3');
+      curSm3.textContent = sm3.substring(0, 24) + '...';
+      curSm3.className = 'mono ' + (sm3Match ? 'good' : 'bad-new');
+
+      const chainSm3El = document.getElementById('chainSm3');
+      chainSm3El.textContent = chainSm3.substring(0, 24) + '...';
+      chainSm3El.className = 'mono';
+
+      // 结果面板
+      const panel = document.getElementById('resultPanel');
+      const btn = document.getElementById('tamperBtn');
+      if (tampered) {
+        panel.className = 'result-panel tampered';
+        document.querySelector('.result-icon').textContent = '❌';
+        document.querySelector('.result-text').textContent = '验证失败';
+        document.querySelector('.result-desc').textContent = '哈希不匹配！数据已被篡改';
+        btn.textContent = '↩ 恢复原始数据';
+        btn.classList.add('restore');
+      } else {
+        panel.className = 'result-panel';
+        document.querySelector('.result-icon').textContent = '✅';
+        document.querySelector('.result-text').textContent = '数据完整';
+        document.querySelector('.result-desc').textContent = '当前数据与区块链存证完全一致';
+        btn.textContent = '⚠ 模拟篡改数据';
+        btn.classList.remove('restore');
+      }
+    }
+
+    function toggleTamper() {
+      tampered = !tampered;
+      updateDisplay();
+    }
+
+    updateDisplay();
+  </script>
+</body>
+</html>

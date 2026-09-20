@@ -1,0 +1,523 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#090d16" />
+  <title>链上验证 · VegetableChain Sci-Fi</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg-deep: #05070d;
+      --glow-green: #39ff7a;
+      --glow-cyan: #00d4ff;
+      --glow-gold: #c9a961;
+      --glow-red: #ff5577;
+      --glow-purple: #7b61ff;
+      --text-primary: #e8f0ff;
+      --text-secondary: #8fa3c7;
+      --text-muted: #4a5a7a;
+      --glass-bg: rgba(15, 22, 38, 0.55);
+      --glass-border: rgba(100, 160, 255, 0.15);
+    }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif;
+      color: var(--text-primary); background: var(--bg-deep);
+      min-height: 100vh; overflow-x: hidden; position: relative;
+    }
+    #bg-canvas { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 0; pointer-events: none; }
+    .grid-overlay {
+      position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 1; pointer-events: none;
+      background-image: linear-gradient(rgba(0, 212, 255, 0.025) 1px, transparent 1px), linear-gradient(90deg, rgba(0, 212, 255, 0.025) 1px, transparent 1px);
+      background-size: 50px 50px;
+      mask-image: radial-gradient(ellipse at center, black 30%, transparent 80%);
+      -webkit-mask-image: radial-gradient(ellipse at center, black 30%, transparent 80%);
+    }
+    .container { position: relative; z-index: 10; max-width: 900px; margin: 0 auto; padding: 0 20px; }
+
+    .nav { display: flex; align-items: center; justify-content: space-between; padding: 20px 0; position: relative; }
+    .nav::after { content: ""; position: absolute; bottom: 0; left: 0; right: 0; height: 1px; background: linear-gradient(90deg, transparent, var(--glass-border), transparent); }
+    .logo { display: flex; align-items: center; gap: 10px; font-size: 16px; font-weight: 800; letter-spacing: 2px; }
+    .logo-mark {
+      width: 32px; height: 32px; border-radius: 8px;
+      background: linear-gradient(135deg, var(--glow-green), var(--glow-cyan));
+      display: flex; align-items: center; justify-content: center;
+      font-size: 16px; color: #05070d; font-weight: 900;
+      box-shadow: 0 0 15px rgba(57, 255, 122, 0.4);
+    }
+    .logo-text { background: linear-gradient(135deg, var(--glow-green), var(--glow-cyan)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+    .nav-right a { color: var(--text-secondary); text-decoration: none; font-size: 12px; padding: 7px 14px; border-radius: 7px; border: 1px solid transparent; transition: all 0.3s; margin-left: 4px; }
+    .nav-right a:hover { color: var(--glow-cyan); border-color: var(--glass-border); background: rgba(0,212,255,0.08); }
+
+    .page-header { padding: 32px 0 24px; text-align: center; }
+    .page-tag { display: inline-block; padding: 5px 16px; border-radius: 999px; font-size: 11px; font-weight: 700; letter-spacing: 2px; background: rgba(0, 212, 255, 0.1); border: 1px solid rgba(0, 212, 255, 0.3); color: var(--glow-cyan); margin-bottom: 14px; }
+    .page-title { font-size: clamp(24px, 4vw, 34px); font-weight: 900; background: linear-gradient(135deg, #fff, var(--glow-cyan)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+    .page-sub { color: var(--text-secondary); font-size: 13px; margin-top: 6px; }
+
+    /* 流程动画区 */
+    .flow-stage {
+      background: var(--glass-bg); backdrop-filter: blur(20px);
+      border: 1px solid var(--glass-border); border-radius: 20px;
+      padding: 40px 30px; margin-bottom: 24px;
+      position: relative; overflow: hidden; min-height: 420px;
+    }
+    .flow-stage::before {
+      content: ""; position: absolute; top: 0; left: 0; right: 0; height: 2px;
+      background: linear-gradient(90deg, transparent, var(--glow-cyan), var(--glow-green), transparent);
+    }
+
+    .flow-line {
+      display: flex; align-items: center; justify-content: space-between;
+      position: relative; margin: 30px 0 40px;
+    }
+
+    /* 连接线 */
+    .connector {
+      position: absolute; top: 50%; transform: translateY(-50%);
+      height: 3px; left: 15%; right: 15%;
+      background: linear-gradient(90deg, rgba(0,212,255,0.1), rgba(57,255,122,0.1));
+      border-radius: 2px; overflow: hidden;
+    }
+    .connector::after {
+      content: ""; position: absolute; top: 0; left: -30%; width: 30%; height: 100%;
+      background: linear-gradient(90deg, transparent, var(--glow-cyan), transparent);
+      animation: flowLine 2s ease-in-out infinite;
+      opacity: 0;
+    }
+    .connector.active::after { opacity: 1; animation: flowLine 0.8s linear infinite; }
+    @keyframes flowLine {
+      0% { left: -30%; }
+      100% { left: 100%; }
+    }
+
+    .flow-node {
+      width: 22%; text-align: center; position: relative; z-index: 2;
+      transition: all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+      opacity: 0.4;
+    }
+    .flow-node.active { opacity: 1; transform: scale(1.1); }
+    .flow-node.done { opacity: 1; }
+
+    .node-icon {
+      width: 72px; height: 72px; border-radius: 50%;
+      background: var(--glass-bg);
+      border: 2px solid var(--glass-border);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 30px; margin: 0 auto 12px;
+      transition: all 0.5s;
+      position: relative;
+    }
+    .flow-node.active .node-icon {
+      border-color: var(--glow-cyan);
+      box-shadow: 0 0 30px rgba(0, 212, 255, 0.5), inset 0 0 20px rgba(0, 212, 255, 0.2);
+      animation: nodePulse 1s ease-in-out infinite;
+    }
+    .flow-node.done .node-icon {
+      border-color: var(--glow-green);
+      box-shadow: 0 0 20px rgba(57, 255, 122, 0.4);
+    }
+    @keyframes nodePulse {
+      0%, 100% { box-shadow: 0 0 20px rgba(0, 212, 255, 0.4), inset 0 0 15px rgba(0, 212, 255, 0.15); }
+      50% { box-shadow: 0 0 40px rgba(0, 212, 255, 0.7), inset 0 0 25px rgba(0, 212, 255, 0.25); }
+    }
+
+    .node-icon .check {
+      position: absolute; top: -4px; right: -4px;
+      width: 24px; height: 24px; border-radius: 50%;
+      background: var(--glow-green); color: #05070d;
+      font-size: 14px; font-weight: 900;
+      display: flex; align-items: center; justify-content: center;
+      opacity: 0; transform: scale(0); transition: all 0.4s;
+    }
+    .flow-node.done .node-icon .check {
+      opacity: 1; transform: scale(1);
+    }
+
+    .node-name { font-size: 13px; font-weight: 700; color: var(--text-primary); margin-bottom: 2px; }
+    .node-desc { font-size: 11px; color: var(--text-muted); }
+
+    /* 数据包粒子 */
+    .data-particle {
+      position: absolute; width: 10px; height: 10px; border-radius: 50%;
+      background: var(--glow-cyan);
+      box-shadow: 0 0 15px var(--glow-cyan);
+      pointer-events: none; z-index: 3;
+      opacity: 0;
+    }
+
+    /* 验证结果徽章 */
+    .result-area {
+      text-align: center; padding: 30px 0 10px;
+      min-height: 140px; display: flex; align-items: center; justify-content: center;
+    }
+    .verify-badge {
+      display: inline-flex; flex-direction: column; align-items: center;
+      opacity: 0; transform: scale(0.5);
+      transition: all 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.5);
+    }
+    .verify-badge.show { opacity: 1; transform: scale(1); }
+
+    .badge-circle {
+      width: 100px; height: 100px; border-radius: 50%;
+      background: linear-gradient(135deg, var(--glow-green), var(--glow-cyan));
+      display: flex; align-items: center; justify-content: center;
+      font-size: 42px; font-weight: 900; color: #05070d;
+      box-shadow: 0 0 40px rgba(57, 255, 122, 0.6);
+      animation: badgeGlow 1.5s ease-in-out infinite;
+      position: relative;
+    }
+    @keyframes badgeGlow {
+      0%, 100% { box-shadow: 0 0 30px rgba(57, 255, 122, 0.5), 0 0 60px rgba(0, 212, 255, 0.3); }
+      50% { box-shadow: 0 0 50px rgba(57, 255, 122, 0.8), 0 0 90px rgba(0, 212, 255, 0.5); }
+    }
+    .badge-circle.fail {
+      background: linear-gradient(135deg, var(--glow-red), #ff8888);
+      box-shadow: 0 0 40px rgba(255, 85, 119, 0.6);
+    }
+    .badge-text {
+      margin-top: 14px; font-size: 22px; font-weight: 900;
+      background: linear-gradient(135deg, var(--glow-green), var(--glow-cyan));
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+      letter-spacing: 2px;
+    }
+    .badge-sub { font-size: 12px; color: var(--text-secondary); margin-top: 4px; }
+
+    /* 开始按钮 */
+    .start-btn {
+      display: block; width: 100%; max-width: 400px; margin: 0 auto;
+      padding: 18px; font-size: 16px; font-weight: 900;
+      background: linear-gradient(135deg, var(--glow-green), var(--glow-cyan));
+      color: #05070d; border: none; border-radius: 14px;
+      cursor: pointer; letter-spacing: 3px;
+      box-shadow: 0 6px 30px rgba(0, 212, 255, 0.35);
+      transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+    .start-btn:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 10px 40px rgba(57, 255, 122, 0.5);
+    }
+    .start-btn:active { transform: translateY(0); }
+
+    /* 哈希对比 */
+    .hash-compare {
+      background: var(--glass-bg); backdrop-filter: blur(20px);
+      border: 1px solid var(--glass-border); border-radius: 16px;
+      padding: 24px; margin-top: 24px; opacity: 0;
+      transform: translateY(20px); transition: all 0.6s 0.5s;
+    }
+    .hash-compare.show { opacity: 1; transform: translateY(0); }
+    .hc-title { font-size: 14px; font-weight: 700; color: var(--glow-cyan); margin-bottom: 16px; display: flex; align-items: center; gap: 8px; }
+    .hc-title::before { content: ""; width: 3px; height: 14px; background: linear-gradient(180deg, var(--glow-green), var(--glow-cyan)); border-radius: 2px; }
+
+    .hc-row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 14px; }
+    .hc-box {
+      background: rgba(5, 7, 13, 0.6); border: 1px solid var(--glass-border);
+      border-radius: 10px; padding: 12px;
+    }
+    .hc-box.match { border-color: rgba(57, 255, 122, 0.5); }
+    .hc-box.mismatch { border-color: rgba(255, 85, 119, 0.5); }
+    .hc-label { font-size: 10px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 6px; }
+    .hc-value { font-family: monospace; font-size: 11px; color: var(--glow-cyan); word-break: break-all; line-height: 1.5; }
+    .hc-box.match .hc-value { color: var(--glow-green); }
+    .hc-box.mismatch .hc-value { color: var(--glow-red); }
+
+    .btn-row { display: flex; gap: 12px; flex-wrap: wrap; justify-content: center; margin-top: 20px; }
+    .btn {
+      padding: 12px 22px; border-radius: 10px; font-size: 13px; font-weight: 700;
+      text-decoration: none; border: none; cursor: pointer; transition: all 0.3s;
+      display: inline-flex; align-items: center; gap: 6px;
+    }
+    .btn-glass { background: var(--glass-bg); backdrop-filter: blur(10px); color: var(--glow-cyan); border: 1px solid var(--glass-border); }
+    .btn-glass:hover { background: rgba(0, 212, 255, 0.1); border-color: var(--glow-cyan); }
+
+    .footer { padding: 30px 0; text-align: center; color: var(--text-muted); font-size: 11px; border-top: 1px solid var(--glass-border); margin-top: 30px; }
+    .footer a { color: var(--glow-cyan); text-decoration: none; }
+
+    @media (max-width: 600px) {
+      .flow-line { flex-wrap: wrap; gap: 16px; justify-content: center; }
+      .flow-node { width: 45%; }
+      .connector { display: none; }
+      .node-icon { width: 56px; height: 56px; font-size: 24px; }
+    }
+  </style>
+</head>
+<body>
+  <canvas id="bg-canvas"></canvas>
+  <div class="grid-overlay"></div>
+
+  <div class="container">
+    <nav class="nav">
+      <div class="logo">
+        <div class="logo-mark">V</div>
+        <span class="logo-text">VEGETABLECHAIN</span>
+      </div>
+      <div class="nav-right">
+        <a href="./index.html">首页</a>
+        <a href="./detail.html">档案</a>
+        <a href="../index.html">标准版 ↗</a>
+      </div>
+    </nav>
+
+    <div class="page-header">
+      <div class="page-tag">ON-CHAIN VERIFICATION</div>
+      <h1 class="page-title">链上数据验证</h1>
+      <p class="page-sub">数据从采集到上链的完整流式验证过程</p>
+    </div>
+
+    <div class="flow-stage">
+      <!-- 4 个节点 -->
+      <div class="flow-line">
+        <div class="connector" id="connector"></div>
+
+        <div class="flow-node" id="node-0">
+          <div class="node-icon">
+            🌱
+            <div class="check">✓</div>
+          </div>
+          <div class="node-name">数据采集</div>
+          <div class="node-desc">传感器 / 实验室</div>
+        </div>
+
+        <div class="flow-node" id="node-1">
+          <div class="node-icon">
+            🔐
+            <div class="check">✓</div>
+          </div>
+          <div class="node-name">哈希加密</div>
+          <div class="node-desc">SHA-256 + SM3</div>
+        </div>
+
+        <div class="flow-node" id="node-2">
+          <div class="node-icon">
+            ⛓
+            <div class="check">✓</div>
+          </div>
+          <div class="node-name">区块打包</div>
+          <div class="node-desc">PBFT 共识</div>
+        </div>
+
+        <div class="flow-node" id="node-3">
+          <div class="node-icon">
+            ✅
+            <div class="check">✓</div>
+          </div>
+          <div class="node-name">链上存证</div>
+          <div class="node-desc">永久可查</div>
+        </div>
+      </div>
+
+      <!-- 结果徽章 -->
+      <div class="result-area">
+        <div class="verify-badge" id="verifyBadge">
+          <div class="badge-circle" id="badgeCircle">✓</div>
+          <div class="badge-text" id="badgeText">验证通过</div>
+          <div class="badge-sub" id="badgeSub">数据与链上存证完全一致</div>
+        </div>
+      </div>
+    </div>
+
+    <button class="start-btn" id="startBtn" onclick="startVerify()">
+      ⚡ 开始链上验证
+    </button>
+
+    <!-- 哈希对比 -->
+    <div class="hash-compare" id="hashCompare">
+      <div class="hc-title">哈希对比详情 // HASH COMPARISON</div>
+
+      <div class="hc-row">
+        <div class="hc-box" id="shaLocal">
+          <div class="hc-label">本地计算 SHA-256</div>
+          <div class="hc-value">—</div>
+        </div>
+        <div class="hc-box" id="shaChain">
+          <div class="hc-label">链上存证 SHA-256</div>
+          <div class="hc-value">—</div>
+        </div>
+      </div>
+
+      <div class="hc-row">
+        <div class="hc-box" id="sm3Local">
+          <div class="hc-label">本地计算 SM3</div>
+          <div class="hc-value">—</div>
+        </div>
+        <div class="hc-box" id="sm3Chain">
+          <div class="hc-label">链上存证 SM3</div>
+          <div class="hc-value">—</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="btn-row">
+      <a href="./detail.html" class="btn btn-glass">← 返回档案</a>
+      <a href="./certificate.html" class="btn btn-glass">存证证书 →</a>
+    </div>
+
+    <footer class="footer">
+      <p>VegetableChain · 科幻版 · 基于 FISCO BCOS 联盟链</p>
+      <p style="margin-top:6px;"><a href="../verify.html">查看标准版</a></p>
+    </footer>
+  </div>
+
+  <script src="../blockchain-data.js"></script>
+  <script src="../crypto-utils.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js"></script>
+  <script>
+    // 背景星空
+    (function() {
+      const canvas = document.getElementById('bg-canvas');
+      const scene = new THREE.Scene();
+      const camera = new THREE.PerspectiveCamera(75, innerWidth / innerHeight, 0.1, 1000);
+      camera.position.z = 1;
+      const renderer = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: false });
+      renderer.setPixelRatio(Math.min(devicePixelRatio, 1.5));
+      renderer.setSize(innerWidth, innerHeight);
+      const N = 500;
+      const pos = new Float32Array(N * 3);
+      const col = new Float32Array(N * 3);
+      for (let i = 0; i < N; i++) {
+        pos[i*3] = (Math.random()-0.5)*4; pos[i*3+1] = (Math.random()-0.5)*3; pos[i*3+2] = Math.random()*-2;
+        const r = Math.random();
+        if (r < 0.6) { col[i*3]=0.7; col[i*3+1]=0.85; col[i*3+2]=1; }
+        else if (r < 0.85) { col[i*3]=0.3; col[i*3+1]=1; col[i*3+2]=0.6; }
+        else { col[i*3]=0.9; col[i*3+1]=0.8; col[i*3+2]=0.5; }
+      }
+      const geo = new THREE.BufferGeometry();
+      geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+      geo.setAttribute('color', new THREE.BufferAttribute(col, 3));
+      const mat = new THREE.PointsMaterial({ size: 0.006, vertexColors: true, transparent: true, opacity: 0.7 });
+      const stars = new THREE.Points(geo, mat);
+      scene.add(stars);
+      let t = 0;
+      function anim() { requestAnimationFrame(anim); t += 0.0003; stars.rotation.y = t; renderer.render(scene, camera); }
+      anim();
+      addEventListener('resize', () => { camera.aspect = innerWidth/innerHeight; camera.updateProjectionMatrix(); renderer.setSize(innerWidth, innerHeight); });
+    })();
+
+    // 流式验证动画
+    let isRunning = false;
+
+    function canonicalJSON(obj) {
+      if (Array.isArray(obj)) return '[' + obj.map(canonicalJSON).join(',') + ']';
+      if (obj !== null && typeof obj === 'object') {
+        const keys = Object.keys(obj).sort();
+        return '{' + keys.map(k => JSON.stringify(k) + ':' + canonicalJSON(obj[k])).join(',') + '}';
+      }
+      return JSON.stringify(obj);
+    }
+
+    async function startVerify() {
+      if (isRunning) return;
+      isRunning = true;
+
+      const btn = document.getElementById('startBtn');
+      btn.textContent = '验证中...';
+      btn.style.opacity = '0.6';
+      btn.style.pointerEvents = 'none';
+
+      // 重置
+      document.getElementById('verifyBadge').classList.remove('show');
+      document.getElementById('hashCompare').classList.remove('show');
+      for (let i = 0; i < 4; i++) {
+        document.getElementById('node-' + i).classList.remove('active', 'done');
+      }
+      document.getElementById('connector').classList.remove('active');
+
+      const D = window.BLOCKCHAIN_DATA;
+      const farm = D.farmData;
+      const veg = D.vegetable;
+
+      const chainSha = (veg.sha256Hash || '').replace(/^0x/, '').toLowerCase();
+      const chainSm3 = (veg.sm3Hash || '').replace(/^0x/, '').toLowerCase();
+
+      // 阶段 1: 数据采集 (0.5s)
+      await step(0, 500);
+
+      // 阶段 2: 哈希加密 (0.8s) + 计算哈希
+      const canonical = canonicalJSON(farm);
+      const shaP = window.CryptoUtils.sha256(canonical);
+      const sm3 = window.CryptoUtils.sm3(canonical);
+      await step(1, 800);
+      const sha = await shaP;
+
+      // 阶段 3: 区块打包 (0.8s)
+      await step(2, 800);
+
+      // 阶段 4: 链上存证 (0.5s)
+      await step(3, 500);
+
+      // 显示结果
+      document.getElementById('connector').classList.remove('active');
+      showResult(sha.toLowerCase(), chainSha, sm3.toLowerCase(), chainSm3);
+
+      btn.textContent = '↻ 重新验证';
+      btn.style.opacity = '1';
+      btn.style.pointerEvents = 'auto';
+      isRunning = false;
+    }
+
+    function step(idx, delay) {
+      return new Promise(resolve => {
+        // 前一个节点变 done
+        if (idx > 0) {
+          document.getElementById('node-' + (idx - 1)).classList.remove('active');
+          document.getElementById('node-' + (idx - 1)).classList.add('done');
+        }
+        // 当前节点变 active
+        document.getElementById('node-' + idx).classList.add('active');
+        document.getElementById('connector').classList.add('active');
+
+        setTimeout(resolve, delay);
+      });
+    }
+
+    function showResult(localSha, chainSha, localSm3, chainSm3) {
+      const shaMatch = localSha === chainSha;
+      const sm3Match = localSm3 === chainSm3;
+      const allPass = shaMatch && sm3Match;
+
+      const badge = document.getElementById('verifyBadge');
+      const circle = document.getElementById('badgeCircle');
+      const text = document.getElementById('badgeText');
+      const sub = document.getElementById('badgeSub');
+
+      if (allPass) {
+        circle.textContent = '✓';
+        circle.classList.remove('fail');
+        text.textContent = '验证通过';
+        text.style.background = 'linear-gradient(135deg, var(--glow-green), var(--glow-cyan))';
+        text.style.webkitBackgroundClip = 'text';
+        text.style.webkitTextFillColor = 'transparent';
+        sub.textContent = '数据与链上存证完全一致';
+      } else {
+        circle.textContent = '✗';
+        circle.classList.add('fail');
+        text.textContent = '验证失败';
+        text.style.background = 'linear-gradient(135deg, #ff5577, #ff8888)';
+        text.style.webkitBackgroundClip = 'text';
+        text.style.webkitTextFillColor = 'transparent';
+        sub.textContent = '数据已被篡改，与链上存证不一致';
+      }
+
+      badge.classList.add('show');
+
+      // 哈希对比
+      setTimeout(() => {
+        const hc = document.getElementById('hashCompare');
+        hc.classList.add('show');
+
+        setHashBox('shaLocal', localSha, shaMatch);
+        setHashBox('shaChain', chainSha, shaMatch);
+        setHashBox('sm3Local', localSm3, sm3Match);
+        setHashBox('sm3Chain', chainSm3, sm3Match);
+      }, 400);
+    }
+
+    function setHashBox(id, value, match) {
+      const el = document.getElementById(id);
+      el.querySelector('.hc-value').textContent = value;
+      el.classList.remove('match', 'mismatch');
+      el.classList.add(match ? 'match' : 'mismatch');
+    }
+  </script>
+</body>
+</html>

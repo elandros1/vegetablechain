@@ -1,0 +1,823 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#090d16" />
+  <title>VegetableChain · 蔬菜数字身份与区块链可信溯源系统 // 科幻版</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg-deep: #05070d;
+      --bg-mid: #090d16;
+      --glow-green: #39ff7a;
+      --glow-cyan: #00d4ff;
+      --glow-gold: #c9a961;
+      --glow-purple: #7b61ff;
+      --text-primary: #e8f0ff;
+      --text-secondary: #8fa3c7;
+      --text-muted: #4a5a7a;
+      --glass-bg: rgba(15, 22, 38, 0.55);
+      --glass-border: rgba(100, 160, 255, 0.15);
+      --glass-glow: rgba(0, 212, 255, 0.08);
+    }
+    html, body { width: 100%; overflow-x: hidden; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", "Segoe UI", sans-serif;
+      color: var(--text-primary);
+      background: var(--bg-deep);
+      min-height: 100vh;
+      position: relative;
+      line-height: 1.6;
+    }
+
+    /* 3D 画布背景 */
+    #three-canvas {
+      position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+      z-index: 0; pointer-events: none;
+    }
+
+    /* 网格覆盖层 */
+    .grid-overlay {
+      position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+      z-index: 1; pointer-events: none;
+      background-image:
+        linear-gradient(rgba(0, 212, 255, 0.03) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(0, 212, 255, 0.03) 1px, transparent 1px);
+      background-size: 60px 60px;
+      mask-image: radial-gradient(ellipse at center, black 30%, transparent 80%);
+      -webkit-mask-image: radial-gradient(ellipse at center, black 30%, transparent 80%);
+    }
+
+    /* 扫描线 */
+    .scan-line {
+      position: fixed; left: 0; right: 0; height: 2px;
+      background: linear-gradient(90deg, transparent, var(--glow-cyan), transparent);
+      opacity: 0.3; z-index: 2; pointer-events: none;
+      animation: scanMove 6s linear infinite;
+    }
+    @keyframes scanMove {
+      0% { top: -2px; }
+      100% { top: 100vh; }
+    }
+
+    .container {
+      position: relative; z-index: 10;
+      max-width: 1280px; margin: 0 auto; padding: 0 24px;
+    }
+
+    /* 顶部导航 */
+    .nav {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 22px 0; position: relative;
+    }
+    .nav::after {
+      content: ""; position: absolute; bottom: 0; left: 0; right: 0; height: 1px;
+      background: linear-gradient(90deg, transparent, var(--glass-border), transparent);
+    }
+    .logo {
+      display: flex; align-items: center; gap: 12px;
+      font-size: 18px; font-weight: 800; letter-spacing: 3px;
+    }
+    .logo-mark {
+      width: 36px; height: 36px; border-radius: 10px;
+      background: linear-gradient(135deg, var(--glow-green), var(--glow-cyan));
+      display: flex; align-items: center; justify-content: center;
+      font-size: 18px; color: #05070d; font-weight: 900;
+      box-shadow: 0 0 20px rgba(57, 255, 122, 0.4);
+    }
+    .logo-text {
+      background: linear-gradient(135deg, var(--glow-green), var(--glow-cyan));
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .nav-links { display: flex; gap: 8px; align-items: center; }
+    .nav-links a {
+      color: var(--text-secondary); text-decoration: none; font-size: 13px;
+      padding: 8px 16px; border-radius: 8px;
+      border: 1px solid transparent; transition: all 0.3s;
+      position: relative;
+    }
+    .nav-links a:hover {
+      color: var(--glow-cyan);
+      border-color: var(--glass-border);
+      background: var(--glass-glow);
+    }
+    .nav-links .version-tag {
+      padding: 6px 14px; border-radius: 999px;
+      font-size: 11px; font-weight: 700; letter-spacing: 1px;
+      background: linear-gradient(135deg, rgba(57, 255, 122, 0.15), rgba(0, 212, 255, 0.15));
+      border: 1px solid rgba(57, 255, 122, 0.3);
+      color: var(--glow-green);
+    }
+
+    /* Hero 区域 */
+    .hero {
+      min-height: 92vh; display: flex; align-items: center;
+      padding: 40px 0 60px; position: relative;
+    }
+    .hero-grid {
+      display: grid; grid-template-columns: 1.1fr 1fr; gap: 60px;
+      align-items: center; width: 100%;
+    }
+    @media (max-width: 900px) {
+      .hero-grid { grid-template-columns: 1fr; gap: 40px; }
+    }
+
+    .hero-left { position: relative; }
+    .hero-badge {
+      display: inline-flex; align-items: center; gap: 8px;
+      padding: 8px 18px; border-radius: 999px;
+      background: var(--glass-bg); backdrop-filter: blur(10px);
+      border: 1px solid var(--glass-border);
+      font-size: 12px; font-weight: 600; letter-spacing: 1px;
+      color: var(--glow-cyan); margin-bottom: 24px;
+    }
+    .hero-badge .dot {
+      width: 6px; height: 6px; border-radius: 50%;
+      background: var(--glow-green);
+      box-shadow: 0 0 10px var(--glow-green);
+      animation: pulse 2s ease-in-out infinite;
+    }
+    @keyframes pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.5; transform: scale(1.3); }
+    }
+
+    .hero h1 {
+      font-size: clamp(34px, 5.5vw, 60px); font-weight: 900;
+      line-height: 1.15; letter-spacing: 1px;
+      margin-bottom: 20px;
+    }
+    .hero h1 .line1 {
+      display: block;
+      background: linear-gradient(135deg, #fff, #b8d4ff);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .hero h1 .line2 {
+      display: block;
+      background: linear-gradient(135deg, var(--glow-green), var(--glow-cyan));
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+      background-clip: text;
+      position: relative;
+    }
+    .hero h1 .line2::after {
+      content: ""; position: absolute; bottom: -4px; left: 0; right: 0; height: 1px;
+      background: linear-gradient(90deg, var(--glow-green), var(--glow-cyan));
+      filter: blur(2px);
+    }
+
+    .hero-desc {
+      color: var(--text-secondary); font-size: 16px; line-height: 1.9;
+      max-width: 520px; margin-bottom: 32px;
+    }
+
+    .hero-stats {
+      display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px;
+      margin-bottom: 32px;
+    }
+    .hero-stat {
+      background: var(--glass-bg); backdrop-filter: blur(16px);
+      border: 1px solid var(--glass-border); border-radius: 14px;
+      padding: 16px; text-align: center; position: relative; overflow: hidden;
+    }
+    .hero-stat::before {
+      content: ""; position: absolute; top: 0; left: 0; right: 0; height: 2px;
+      background: linear-gradient(90deg, transparent, var(--glow-cyan), transparent);
+    }
+    .hero-stat.green::before { background: linear-gradient(90deg, transparent, var(--glow-green), transparent); }
+    .hero-stat.gold::before { background: linear-gradient(90deg, transparent, var(--glow-gold), transparent); }
+    .hero-stat .num {
+      font-size: 24px; font-weight: 900; font-family: monospace;
+      color: var(--glow-cyan); margin-bottom: 2px;
+    }
+    .hero-stat.green .num { color: var(--glow-green); }
+    .hero-stat.gold .num { color: var(--glow-gold); }
+    .hero-stat .label { font-size: 11px; color: var(--text-muted); letter-spacing: 1px; }
+
+    .hero-btns { display: flex; gap: 14px; flex-wrap: wrap; }
+    .btn {
+      padding: 14px 28px; border-radius: 12px; font-size: 14px;
+      font-weight: 700; text-decoration: none; cursor: pointer;
+      transition: all 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+      display: inline-flex; align-items: center; gap: 8px;
+      border: none; position: relative; overflow: hidden;
+    }
+    .btn-primary {
+      background: linear-gradient(135deg, var(--glow-green), var(--glow-cyan));
+      color: #05070d;
+      box-shadow: 0 4px 24px rgba(0, 212, 255, 0.3);
+    }
+    .btn-primary:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 8px 40px rgba(57, 255, 122, 0.4);
+    }
+    .btn-glass {
+      background: var(--glass-bg); backdrop-filter: blur(10px);
+      color: var(--glow-cyan); border: 1px solid var(--glass-border);
+    }
+    .btn-glass:hover {
+      background: var(--glass-glow); border-color: var(--glow-cyan);
+      box-shadow: 0 0 20px rgba(0, 212, 255, 0.2);
+    }
+
+    /* 3D 球体容器 */
+    .hero-right {
+      position: relative; height: 500px;
+      display: flex; align-items: center; justify-content: center;
+    }
+    #sphere-canvas {
+      width: 100%; height: 100%;
+      cursor: grab;
+    }
+    #sphere-canvas:active { cursor: grabbing; }
+
+    .sphere-glow {
+      position: absolute; top: 50%; left: 50%;
+      transform: translate(-50%, -50%);
+      width: 380px; height: 380px; border-radius: 50%;
+      background: radial-gradient(circle, rgba(0, 212, 255, 0.15), transparent 70%);
+      filter: blur(40px); pointer-events: none;
+    }
+
+    /* 漂浮数据标签 */
+    .floating-tag {
+      position: absolute;
+      background: var(--glass-bg); backdrop-filter: blur(10px);
+      border: 1px solid var(--glass-border); border-radius: 8px;
+      padding: 8px 14px; font-size: 11px; font-family: monospace;
+      color: var(--glow-cyan); white-space: nowrap;
+      pointer-events: none;
+    }
+    .floating-tag.green { color: var(--glow-green); border-color: rgba(57, 255, 122, 0.3); }
+    .floating-tag.gold { color: var(--glow-gold); border-color: rgba(201, 169, 97, 0.3); }
+    .tag-1 { top: 15%; right: 5%; animation: float1 4s ease-in-out infinite; }
+    .tag-2 { top: 25%; left: 0%; animation: float2 5s ease-in-out infinite; }
+    .tag-3 { bottom: 20%; right: 8%; animation: float3 4.5s ease-in-out infinite; }
+    .tag-4 { bottom: 10%; left: 10%; animation: float1 5.5s ease-in-out infinite; }
+    @keyframes float1 { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-12px)} }
+    @keyframes float2 { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-8px)} }
+    @keyframes float3 { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-15px)} }
+
+    /* 功能区 */
+    .features-section { padding: 100px 0 60px; position: relative; }
+    .section-header { text-align: center; margin-bottom: 60px; }
+    .section-tag {
+      display: inline-block; padding: 6px 18px; border-radius: 999px;
+      font-size: 11px; font-weight: 700; letter-spacing: 2px;
+      background: rgba(0, 212, 255, 0.08);
+      border: 1px solid rgba(0, 212, 255, 0.2);
+      color: var(--glow-cyan); margin-bottom: 16px;
+    }
+    .section-title {
+      font-size: clamp(26px, 4vw, 40px); font-weight: 900;
+      background: linear-gradient(135deg, #fff, var(--glow-cyan));
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+      background-clip: text; margin-bottom: 12px;
+    }
+    .section-sub { color: var(--text-secondary); font-size: 15px; max-width: 560px; margin: 0 auto; }
+
+    .features-grid {
+      display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px;
+    }
+    @media (max-width: 800px) { .features-grid { grid-template-columns: 1fr; } }
+
+    .feature-card {
+      background: var(--glass-bg); backdrop-filter: blur(20px);
+      border: 1px solid var(--glass-border); border-radius: 18px;
+      padding: 32px 28px; position: relative; overflow: hidden;
+      transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+    .feature-card::before {
+      content: ""; position: absolute; top: 0; left: 0; right: 0; height: 2px;
+      background: linear-gradient(90deg, transparent, var(--glow-cyan), transparent);
+      opacity: 0.6;
+    }
+    .feature-card:hover {
+      transform: translateY(-6px);
+      border-color: rgba(0, 212, 255, 0.4);
+      box-shadow: 0 20px 60px rgba(0, 212, 255, 0.15);
+    }
+    .feature-icon {
+      width: 56px; height: 56px; border-radius: 14px;
+      background: linear-gradient(135deg, rgba(0, 212, 255, 0.15), rgba(57, 255, 122, 0.1));
+      border: 1px solid rgba(0, 212, 255, 0.2);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 26px; margin-bottom: 20px;
+    }
+    .feature-card h3 {
+      font-size: 18px; font-weight: 700; color: var(--text-primary);
+      margin-bottom: 10px;
+    }
+    .feature-card p {
+      color: var(--text-secondary); font-size: 14px; line-height: 1.8;
+    }
+
+    /* 流程图 */
+    .flow-section { padding: 80px 0; }
+    .flow-container {
+      display: flex; align-items: stretch; justify-content: center;
+      gap: 0; margin-top: 50px; flex-wrap: wrap;
+    }
+    .flow-node {
+      flex: 1; min-width: 160px; max-width: 220px;
+      background: var(--glass-bg); backdrop-filter: blur(20px);
+      border: 1px solid var(--glass-border); border-radius: 16px;
+      padding: 24px 20px; text-align: center; position: relative;
+      transition: all 0.3s;
+    }
+    .flow-node:hover {
+      border-color: var(--glow-green);
+      box-shadow: 0 0 30px rgba(57, 255, 122, 0.2);
+    }
+    .flow-node .icon {
+      width: 48px; height: 48px; border-radius: 50%;
+      background: linear-gradient(135deg, var(--glow-green), var(--glow-cyan));
+      display: flex; align-items: center; justify-content: center;
+      font-size: 22px; margin: 0 auto 14px; color: #05070d;
+    }
+    .flow-node h4 { font-size: 15px; margin-bottom: 6px; color: var(--text-primary); }
+    .flow-node p { font-size: 12px; color: var(--text-muted); line-height: 1.6; }
+
+    .flow-arrow {
+      flex-shrink: 0; width: 40px; display: flex; align-items: center; justify-content: center;
+      position: relative;
+    }
+    .flow-arrow::before {
+      content: "→"; font-size: 24px; color: var(--glow-cyan);
+      animation: arrowPulse 1.5s ease-in-out infinite;
+    }
+    @keyframes arrowPulse {
+      0%, 100% { opacity: 0.4; transform: translateX(-3px); }
+      50% { opacity: 1; transform: translateX(3px); }
+    }
+
+    /* 页脚 */
+    .footer {
+      padding: 40px 0 30px; text-align: center;
+      color: var(--text-muted); font-size: 12px;
+      border-top: 1px solid var(--glass-border);
+      margin-top: 80px; position: relative; z-index: 10;
+    }
+    .footer a { color: var(--glow-cyan); text-decoration: none; }
+    .footer-links { display: flex; gap: 20px; justify-content: center; margin-bottom: 12px; }
+  </style>
+</head>
+<body>
+  <canvas id="three-canvas"></canvas>
+  <div class="grid-overlay"></div>
+  <div class="scan-line"></div>
+
+  <div class="container">
+    <nav class="nav">
+      <div class="logo">
+        <div class="logo-mark">V</div>
+        <span class="logo-text">VEGETABLECHAIN</span>
+      </div>
+      <div class="nav-links">
+        <a href="./index.html" style="color: var(--glow-green);">首页</a>
+        <a href="./detail.html">档案</a>
+        <a href="./verify.html">验证</a>
+        <a href="../index.html">标准版 ↗</a>
+        <span class="version-tag">SCI-FI v3</span>
+      </div>
+    </nav>
+
+    <section class="hero">
+      <div class="hero-grid">
+        <div class="hero-left">
+          <div class="hero-badge">
+            <span class="dot"></span>
+            FISCO BCOS 联盟链 · 实时在线
+          </div>
+          <h1>
+            <span class="line1">给每一颗蔬菜</span>
+            <span class="line2">一张区块链身份证</span>
+          </h1>
+          <p class="hero-desc">
+            基于国产 FISCO BCOS 联盟链的蔬菜数字身份与可信溯源系统。
+            从种植到餐桌，全链路数据上链存证，SHA-256 + SM3 双哈希验证，
+            不可篡改，永久可查。
+          </p>
+
+          <div class="hero-stats">
+            <div class="hero-stat green">
+              <div class="num">4</div>
+              <div class="label">共识节点</div>
+            </div>
+            <div class="hero-stat">
+              <div class="num">2</div>
+              <div class="label">哈希算法</div>
+            </div>
+            <div class="hero-stat gold">
+              <div class="num">100K+</div>
+              <div class="label">TPS</div>
+            </div>
+          </div>
+
+          <div class="hero-btns">
+            <a href="./detail.html" class="btn btn-primary">
+              🍅 查看番茄档案
+              <span>→</span>
+            </a>
+            <a href="./verify.html" class="btn btn-glass">
+              ⚡ 体验验证流程
+            </a>
+          </div>
+        </div>
+
+        <div class="hero-right">
+          <div class="sphere-glow"></div>
+          <canvas id="sphere-canvas"></canvas>
+          <div class="floating-tag green tag-1">SHA-256 ✓</div>
+          <div class="floating-tag tag-2">SM3 国密 ✓</div>
+          <div class="floating-tag gold tag-3">PBFT 共识</div>
+          <div class="floating-tag tag-4">0x522a...72a9</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 核心能力 -->
+    <section class="features-section">
+      <div class="section-header">
+        <div class="section-tag">CORE CAPABILITY</div>
+        <h2 class="section-title">核心技术能力</h2>
+        <p class="section-sub">国产联盟链 + 国密算法 + 双哈希存证 + 全链路溯源</p>
+      </div>
+      <div class="features-grid">
+        <div class="feature-card">
+          <div class="feature-icon">⛓</div>
+          <h3>FISCO BCOS 联盟链</h3>
+          <p>基于微众银行开源国产联盟链，PBFT 拜占庭容错共识，4 节点分布式部署，支持国密算法，符合国内监管要求。</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon">🔐</div>
+          <h3>双哈希存证</h3>
+          <p>SHA-256 + SM3 国密双哈希验证，数据指纹双重保障，任何一字节的篡改都会导致哈希不匹配，立即被发现。</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon">✍️</div>
+          <h3>数字签名</h3>
+          <p>ECDSA 数字签名确保数据来源可信，不可抵赖。支持 SM2 国密签名扩展，符合国家密码管理局标准。</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon">📱</div>
+          <h3>扫码溯源</h3>
+          <p>消费者通过手机扫码即可验证蔬菜全链路信息，从产地、种植、检测到物流，全过程透明可查。</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon">🌡</div>
+          <h3>物联网对接</h3>
+          <p>支持温湿度传感器、土壤检测仪、GPS 定位、冷链监控等物联网设备数据自动上链，杜绝人工造假。</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon">👁</div>
+          <h3>多方监管</h3>
+          <p>农场、检测机构、物流企业、商超、监管部门多方参与，数据透明，全链路可审计、可追溯。</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- 流程图 -->
+    <section class="flow-section">
+      <div class="section-header">
+        <div class="section-tag">TRACEABILITY FLOW</div>
+        <h2 class="section-title">全链路溯源流程</h2>
+        <p class="section-sub">从种子到餐桌，每一步都上链存证，不可篡改</p>
+      </div>
+      <div class="flow-container">
+        <div class="flow-node">
+          <div class="icon">🌱</div>
+          <h4>种植上链</h4>
+          <p>农场播种数据 + 传感器自动上链</p>
+        </div>
+        <div class="flow-arrow"></div>
+        <div class="flow-node">
+          <div class="icon">🧪</div>
+          <h4>检测存证</h4>
+          <p>检测机构报告哈希存证</p>
+        </div>
+        <div class="flow-arrow"></div>
+        <div class="flow-node">
+          <div class="icon">🚚</div>
+          <h4>物流追踪</h4>
+          <p>GPS + 冷链温度实时上链</p>
+        </div>
+        <div class="flow-arrow"></div>
+        <div class="flow-node">
+          <div class="icon">🏪</div>
+          <h4>商超入库</h4>
+          <p>验收数据同步上链</p>
+        </div>
+        <div class="flow-arrow"></div>
+        <div class="flow-node">
+          <div class="icon">📱</div>
+          <h4>扫码验证</h4>
+          <p>消费者一键验证真伪</p>
+        </div>
+      </div>
+    </section>
+
+    <footer class="footer">
+      <div class="footer-links">
+        <a href="./detail.html">档案详情</a>
+        <a href="./verify.html">数据验证</a>
+        <a href="./certificate.html">存证证书</a>
+        <a href="./tamper.html">篡改实验</a>
+        <a href="../index.html">标准版</a>
+      </div>
+      <p>VegetableChain · 科幻版 · 基于 FISCO BCOS v2.9.1 联盟链</p>
+      <p style="margin-top:6px;">© 2026 VegetableChain. All rights reserved.</p>
+    </footer>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js"></script>
+  <script>
+    // ============================================================
+    // Three.js 3D 数据球体
+    // ============================================================
+    (function() {
+      const canvas = document.getElementById('sphere-canvas');
+      if (!canvas) return;
+
+      const scene = new THREE.Scene();
+      const rect = canvas.parentElement.getBoundingClientRect();
+      const camera = new THREE.PerspectiveCamera(60, rect.width / rect.height, 0.1, 1000);
+      camera.position.z = 4;
+
+      const renderer = new THREE.WebGLRenderer({
+        canvas: canvas,
+        antialias: true,
+        alpha: true
+      });
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+      renderer.setSize(rect.width, rect.height);
+
+      // 主球体（线框数据球）
+      const sphereGeo = new THREE.SphereGeometry(1.2, 48, 48);
+      const sphereMat = new THREE.MeshBasicMaterial({
+        color: 0x00d4ff,
+        wireframe: true,
+        transparent: true,
+        opacity: 0.3
+      });
+      const sphere = new THREE.Mesh(sphereGeo, sphereMat);
+      scene.add(sphere);
+
+      // 内层发光球
+      const innerGeo = new THREE.SphereGeometry(1.0, 32, 32);
+      const innerMat = new THREE.MeshBasicMaterial({
+        color: 0x39ff7a,
+        transparent: true,
+        opacity: 0.08,
+        side: THREE.FrontSide
+      });
+      const innerSphere = new THREE.Mesh(innerGeo, innerMat);
+      scene.add(innerSphere);
+
+      // 粒子点（表面数据点）
+      const particlesGeo = new THREE.BufferGeometry();
+      const particleCount = 300;
+      const positions = new Float32Array(particleCount * 3);
+      const colors = new Float32Array(particleCount * 3);
+
+      for (let i = 0; i < particleCount; i++) {
+        const theta = Math.random() * Math.PI * 2;
+        const phi = Math.acos(2 * Math.random() - 1);
+        const r = 1.2 + (Math.random() - 0.5) * 0.05;
+
+        positions[i * 3] = r * Math.sin(phi) * Math.cos(theta);
+        positions[i * 3 + 1] = r * Math.sin(phi) * Math.sin(theta);
+        positions[i * 3 + 2] = r * Math.cos(phi);
+
+        const mix = Math.random();
+        colors[i * 3] = 0 + (1 - mix) * 0.2;
+        colors[i * 3 + 1] = mix > 0.5 ? 1 : 0.83;
+        colors[i * 3 + 2] = mix > 0.5 ? 0.47 : 1;
+      }
+
+      particlesGeo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+      particlesGeo.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+
+      const particlesMat = new THREE.PointsMaterial({
+        size: 0.03,
+        vertexColors: true,
+        transparent: true,
+        opacity: 0.9,
+        sizeAttenuation: true
+      });
+      const particles = new THREE.Points(particlesGeo, particlesMat);
+      scene.add(particles);
+
+      // 轨道环 1 - 赤道
+      const ring1Geo = new THREE.TorusGeometry(1.55, 0.008, 8, 100);
+      const ring1Mat = new THREE.MeshBasicMaterial({
+        color: 0x00d4ff,
+        transparent: true,
+        opacity: 0.5
+      });
+      const ring1 = new THREE.Mesh(ring1Geo, ring1Mat);
+      ring1.rotation.x = Math.PI / 2;
+      scene.add(ring1);
+
+      // 轨道环 2 - 倾斜
+      const ring2Geo = new THREE.TorusGeometry(1.7, 0.006, 8, 100);
+      const ring2Mat = new THREE.MeshBasicMaterial({
+        color: 0x39ff7a,
+        transparent: true,
+        opacity: 0.4
+      });
+      const ring2 = new THREE.Mesh(ring2Geo, ring2Mat);
+      ring2.rotation.x = Math.PI / 3;
+      ring2.rotation.z = Math.PI / 6;
+      scene.add(ring2);
+
+      // 轨道环 3 - 垂直
+      const ring3Geo = new THREE.TorusGeometry(1.85, 0.005, 8, 100);
+      const ring3Mat = new THREE.MeshBasicMaterial({
+        color: 0xc9a961,
+        transparent: true,
+        opacity: 0.3
+      });
+      const ring3 = new THREE.Mesh(ring3Geo, ring3Mat);
+      ring3.rotation.x = Math.PI / 4;
+      ring3.rotation.y = Math.PI / 3;
+      scene.add(ring3);
+
+      // 轨道上的卫星节点
+      const satelliteGeo = new THREE.SphereGeometry(0.04, 16, 16);
+      const satelliteColors = [0x39ff7a, 0x00d4ff, 0xc9a961, 0x7b61ff];
+      const satellites = [];
+
+      for (let i = 0; i < 4; i++) {
+        const mat = new THREE.MeshBasicMaterial({ color: satelliteColors[i] });
+        const sat = new THREE.Mesh(satelliteGeo, mat);
+        sat.userData = {
+          orbit: 1.55 + i * 0.15,
+          speed: 0.3 + Math.random() * 0.5,
+          angle: Math.random() * Math.PI * 2,
+          axis: i % 2 === 0 ? 'y' : 'x',
+          tilt: Math.random() * 0.5
+        };
+        scene.add(sat);
+        satellites.push(sat);
+      }
+
+      // 交互旋转
+      let isDragging = false;
+      let prevX = 0, prevY = 0;
+      let rotY = 0, rotX = 0;
+      let autoRotY = 0;
+
+      canvas.addEventListener('touchstart', (e) => {
+        isDragging = true;
+        prevX = e.touches[0].clientX;
+        prevY = e.touches[0].clientY;
+      });
+      canvas.addEventListener('touchmove', (e) => {
+        if (!isDragging) return;
+        const dx = e.touches[0].clientX - prevX;
+        const dy = e.touches[0].clientY - prevY;
+        rotY += dx * 0.008;
+        rotX += dy * 0.008;
+        rotX = Math.max(-Math.PI / 3, Math.min(Math.PI / 3, rotX));
+        prevX = e.touches[0].clientX;
+        prevY = e.touches[0].clientY;
+      });
+      canvas.addEventListener('touchend', () => { isDragging = false; });
+
+      canvas.addEventListener('mousedown', (e) => {
+        isDragging = true;
+        prevX = e.clientX;
+        prevY = e.clientY;
+      });
+      canvas.addEventListener('mousemove', (e) => {
+        if (!isDragging) return;
+        const dx = e.clientX - prevX;
+        const dy = e.clientY - prevY;
+        rotY += dx * 0.008;
+        rotX += dy * 0.008;
+        rotX = Math.max(-Math.PI / 3, Math.min(Math.PI / 3, rotX));
+        prevX = e.clientX;
+        prevY = e.clientY;
+      });
+      canvas.addEventListener('mouseup', () => { isDragging = false; });
+      canvas.addEventListener('mouseleave', () => { isDragging = false; });
+
+      // 动画循环
+      function animate() {
+        requestAnimationFrame(animate);
+
+        if (!isDragging) {
+          autoRotY += 0.002;
+        }
+
+        const totalRotY = rotY + autoRotY;
+
+        sphere.rotation.y = totalRotY;
+        sphere.rotation.x = rotX;
+        particles.rotation.y = totalRotY;
+        particles.rotation.x = rotX;
+        innerSphere.rotation.y = totalRotY * 0.5;
+
+        ring1.rotation.z = totalRotY * 0.3;
+        ring2.rotation.y = totalRotY * 0.5;
+        ring3.rotation.x = totalRotY * 0.2;
+
+        // 卫星运动
+        satellites.forEach((sat, i) => {
+          sat.userData.angle += sat.userData.speed * 0.01;
+          const a = sat.userData.angle;
+          const r = sat.userData.orbit;
+          if (sat.userData.axis === 'y') {
+            sat.position.x = Math.cos(a) * r;
+            sat.position.z = Math.sin(a) * r;
+            sat.position.y = Math.sin(a * 2) * sat.userData.tilt * 0.3;
+          } else {
+            sat.position.y = Math.cos(a) * r;
+            sat.position.z = Math.sin(a) * r;
+            sat.position.x = Math.sin(a * 2) * sat.userData.tilt * 0.3;
+          }
+        });
+
+        renderer.render(scene, camera);
+      }
+      animate();
+
+      // 响应式
+      function onResize() {
+        const r = canvas.parentElement.getBoundingClientRect();
+        camera.aspect = r.width / r.height;
+        camera.updateProjectionMatrix();
+        renderer.setSize(r.width, r.height);
+      }
+      window.addEventListener('resize', onResize);
+    })();
+
+    // ============================================================
+    // 背景星空粒子
+    // ============================================================
+    (function() {
+      const canvas = document.getElementById('three-canvas');
+      const scene = new THREE.Scene();
+      const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+      camera.position.z = 1;
+
+      const renderer = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: false });
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
+      renderer.setSize(window.innerWidth, window.innerHeight);
+
+      const starCount = 800;
+      const positions = new Float32Array(starCount * 3);
+      const colors = new Float32Array(starCount * 3);
+
+      for (let i = 0; i < starCount; i++) {
+        positions[i * 3] = (Math.random() - 0.5) * 4;
+        positions[i * 3 + 1] = (Math.random() - 0.5) * 3;
+        positions[i * 3 + 2] = Math.random() * -2;
+
+        const rand = Math.random();
+        if (rand < 0.6) {
+          colors[i * 3] = 0.7; colors[i * 3 + 1] = 0.85; colors[i * 3 + 2] = 1;
+        } else if (rand < 0.85) {
+          colors[i * 3] = 0.3; colors[i * 3 + 1] = 1; colors[i * 3 + 2] = 0.6;
+        } else {
+          colors[i * 3] = 0.9; colors[i * 3 + 1] = 0.8; colors[i * 3 + 2] = 0.5;
+        }
+      }
+
+      const geo = new THREE.BufferGeometry();
+      geo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+      geo.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+
+      const mat = new THREE.PointsMaterial({
+        size: 0.006,
+        vertexColors: true,
+        transparent: true,
+        opacity: 0.8,
+        sizeAttenuation: true
+      });
+
+      const stars = new THREE.Points(geo, mat);
+      scene.add(stars);
+
+      let t = 0;
+      function animate() {
+        requestAnimationFrame(animate);
+        t += 0.0003;
+        stars.rotation.y = t;
+        stars.rotation.x = Math.sin(t * 0.5) * 0.1;
+        renderer.render(scene, camera);
+      }
+      animate();
+
+      window.addEventListener('resize', () => {
+        camera.aspect = window.innerWidth / window.innerHeight;
+        camera.updateProjectionMatrix();
+        renderer.setSize(window.innerWidth, window.innerHeight);
+      });
+    })();
+  </script>
+</body>
+</html>
