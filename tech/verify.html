@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#0a0a1a" />
+  <title>数据验证 · VegetableChain Tech</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg-deep: #050510;
+      --neon-cyan: #00d4ff;
+      --neon-purple: #b400ff;
+      --neon-green: #00ff88;
+      --neon-red: #ff4757;
+      --text: #e0e8ff;
+      --text-bright: #ffffff;
+      --text-dim: #7a88b8;
+      --card-bg: rgba(15, 20, 45, 0.6);
+      --card-border: rgba(0, 212, 255, 0.25);
+    }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif;
+      color: var(--text); background: var(--bg-deep);
+      min-height: 100vh; overflow-x: hidden; position: relative;
+    }
+    #particles { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 0; pointer-events: none; }
+    .container { max-width: 800px; margin: 0 auto; padding: 24px; position: relative; z-index: 1; }
+    .nav { display: flex; justify-content: space-between; align-items: center; padding: 16px 0 24px; }
+    .logo { font-size: 18px; font-weight: 900; letter-spacing: 2px; background: linear-gradient(135deg, var(--neon-cyan), var(--neon-purple)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+    .nav a { color: var(--text-dim); text-decoration: none; font-size: 13px; padding: 6px 14px; border-radius: 20px; border: 1px solid transparent; transition: all 0.3s; }
+    .nav a:hover { color: var(--neon-cyan); border-color: var(--neon-cyan); }
+    .page-title { font-size: 26px; font-weight: 900; background: linear-gradient(135deg, #fff, var(--neon-cyan)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+    .page-sub { color: var(--text-dim); font-size: 13px; margin: 6px 0 24px; }
+
+    .card {
+      background: var(--card-bg); backdrop-filter: blur(20px);
+      border: 1px solid var(--card-border); border-radius: 18px;
+      padding: 24px; margin-bottom: 20px; position: relative; overflow: hidden;
+    }
+    .card::before { content: ""; position: absolute; top: 0; left: 0; right: 0; height: 2px; background: linear-gradient(90deg, transparent, var(--neon-cyan), var(--neon-purple), transparent); }
+    .card h2 { font-size: 17px; color: var(--neon-cyan); margin-bottom: 16px; display: flex; align-items: center; gap: 10px; }
+    .card h2::before { content: ""; width: 3px; height: 18px; background: linear-gradient(180deg, var(--neon-cyan), var(--neon-purple)); border-radius: 2px; }
+
+    /* 结果面板 */
+    .result-panel {
+      text-align: center; padding: 30px 20px;
+      border-radius: 16px; margin-bottom: 20px;
+      background: rgba(0, 255, 136, 0.05); border: 1px solid var(--neon-green);
+      animation: resultGlow 2s ease-in-out infinite;
+    }
+    .result-panel.fail {
+      background: rgba(255, 71, 87, 0.05); border-color: var(--neon-red);
+      animation: resultGlowRed 2s ease-in-out infinite;
+    }
+    @keyframes resultGlow {
+      0%, 100% { box-shadow: 0 0 30px rgba(0, 255, 136, 0.2); }
+      50% { box-shadow: 0 0 50px rgba(0, 255, 136, 0.4); }
+    }
+    @keyframes resultGlowRed {
+      0%, 100% { box-shadow: 0 0 30px rgba(255, 71, 87, 0.2); }
+      50% { box-shadow: 0 0 50px rgba(255, 71, 87, 0.4); }
+    }
+    .result-icon { font-size: 48px; margin-bottom: 10px; }
+    .result-text { font-size: 24px; font-weight: 900; color: var(--neon-green); }
+    .result-panel.fail .result-text { color: var(--neon-red); }
+    .result-desc { color: var(--text-dim); font-size: 13px; margin-top: 6px; }
+
+    /* 哈希对比 */
+    .hash-compare { display: grid; grid-template-columns: 1fr auto 1fr; gap: 12px; align-items: center; margin: 12px 0; }
+    .hash-side {
+      background: rgba(5, 5, 16, 0.6); border: 1px solid var(--card-border);
+      border-radius: 10px; padding: 12px;
+    }
+    .hash-side .label { font-size: 11px; color: var(--text-dim); margin-bottom: 6px; text-transform: uppercase; letter-spacing: 1px; }
+    .hash-side .value { font-family: monospace; font-size: 12px; color: var(--neon-cyan); word-break: break-all; line-height: 1.5; }
+    .hash-side.match { border-color: var(--neon-green); }
+    .hash-side.match .value { color: var(--neon-green); }
+    .hash-side.mismatch { border-color: var(--neon-red); }
+    .hash-side.mismatch .value { color: var(--neon-red); text-decoration: line-through; }
+    .hash-vs { font-size: 20px; font-weight: 900; color: var(--neon-cyan); text-align: center; }
+    .hash-vs.ok { color: var(--neon-green); }
+    .hash-vs.bad { color: var(--neon-red); }
+
+    .btn-row { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 20px; }
+    .btn {
+      padding: 12px 24px; border-radius: 10px; font-size: 14px; font-weight: 700;
+      text-decoration: none; border: none; cursor: pointer; transition: all 0.3s;
+      display: inline-flex; align-items: center; gap: 6px;
+    }
+    .btn-primary { background: linear-gradient(135deg, var(--neon-cyan), var(--neon-purple)); color: #fff; }
+    .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 8px 30px rgba(180, 0, 255, 0.4); }
+    .btn-outline { background: transparent; color: var(--neon-cyan); border: 1px solid var(--neon-cyan); }
+    .btn-outline:hover { background: rgba(0, 212, 255, 0.1); }
+
+    .footer { padding: 30px 0; text-align: center; color: var(--text-dim); font-size: 12px; border-top: 1px solid var(--card-border); margin-top: 30px; }
+    .footer a { color: var(--neon-cyan); text-decoration: none; }
+
+    .verify-btn {
+      width: 100%; padding: 16px; font-size: 16px; font-weight: 900;
+      background: linear-gradient(135deg, var(--neon-cyan), var(--neon-purple));
+      color: #fff; border: none; border-radius: 12px; cursor: pointer;
+      transition: all 0.3s; letter-spacing: 2px;
+    }
+    .verify-btn:hover { transform: translateY(-2px); box-shadow: 0 10px 40px rgba(180, 0, 255, 0.5); }
+  </style>
+</head>
+<body>
+  <canvas id="particles"></canvas>
+  <div class="container">
+    <nav class="nav">
+      <div class="logo">VegetableChain</div>
+      <div><a href="./detail.html">返回</a> <a href="../verify.html" style="margin-left:8px;">标准版 ↗</a></div>
+    </nav>
+    <h1 class="page-title">数据完整性验证</h1>
+    <p class="page-sub">在本地重新计算哈希，与区块链存证对比</p>
+
+    <div id="resultPanel" class="result-panel">
+      <div class="result-icon">⚡</div>
+      <div class="result-text">验证中...</div>
+      <div class="result-desc">正在计算哈希并对比链上数据</div>
+    </div>
+
+    <div class="card">
+      <h2>SHA-256 哈希对比</h2>
+      <div class="hash-compare">
+        <div class="hash-side" id="shaLocal">
+          <div class="label">本地计算</div>
+          <div class="value">计算中...</div>
+        </div>
+        <div class="hash-vs" id="shaVs">VS</div>
+        <div class="hash-side" id="shaChain">
+          <div class="label">链上存证</div>
+          <div class="value">加载中...</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>SM3 国密哈希对比</h2>
+      <div class="hash-compare">
+        <div class="hash-side" id="sm3Local">
+          <div class="label">本地计算</div>
+          <div class="value">计算中...</div>
+        </div>
+        <div class="hash-vs" id="sm3Vs">VS</div>
+        <div class="hash-side" id="sm3Chain">
+          <div class="label">链上存证</div>
+          <div class="value">加载中...</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>区块链凭证</h2>
+      <div style="display:grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+        <div style="background: rgba(5,5,16,0.5); border: 1px solid var(--card-border); border-radius: 10px; padding: 12px;">
+          <div style="font-size:11px; color:var(--text-dim); margin-bottom:4px;">交易哈希</div>
+          <div style="font-family:monospace; font-size:12px; color:var(--neon-cyan); word-break:break-all;" id="v-tx">—</div>
+        </div>
+        <div style="background: rgba(5,5,16,0.5); border: 1px solid var(--card-border); border-radius: 10px; padding: 12px;">
+          <div style="font-size:11px; color:var(--text-dim); margin-bottom:4px;">区块高度</div>
+          <div style="font-size:16px; font-weight:700; color:var(--neon-green);" id="v-block">—</div>
+        </div>
+        <div style="background: rgba(5,5,16,0.5); border: 1px solid var(--card-border); border-radius: 10px; padding: 12px;">
+          <div style="font-size:11px; color:var(--text-dim); margin-bottom:4px;">合约地址</div>
+          <div style="font-family:monospace; font-size:12px; color:var(--neon-cyan); word-break:break-all;" id="v-contract">—</div>
+        </div>
+        <div style="background: rgba(5,5,16,0.5); border: 1px solid var(--card-border); border-radius: 10px; padding: 12px;">
+          <div style="font-size:11px; color:var(--text-dim); margin-bottom:4px;">区块链</div>
+          <div style="font-size:13px; font-weight:600;" id="v-net">—</div>
+        </div>
+      </div>
+    </div>
+
+    <button class="verify-btn" onclick="runVerify()">⚡ 重新验证</button>
+
+    <div class="btn-row">
+      <a href="./detail.html" class="btn btn-outline">返回档案</a>
+      <a href="./tamper.html" class="btn btn-outline">篡改实验 →</a>
+    </div>
+
+    <footer class="footer">
+      <p>VegetableChain · 科技版 · 基于 FISCO BCOS 联盟链</p>
+      <p style="margin-top:6px;"><a href="../verify.html">查看标准版</a></p>
+    </footer>
+  </div>
+
+  <script src="../blockchain-data.js"></script>
+  <script src="../crypto-utils.js"></script>
+  <script>
+    function canonicalJSON(obj) {
+      if (Array.isArray(obj)) return '[' + obj.map(canonicalJSON).join(',') + ']';
+      if (obj !== null && typeof obj === 'object') {
+        const keys = Object.keys(obj).sort();
+        return '{' + keys.map(k => JSON.stringify(k) + ':' + canonicalJSON(obj[k])).join(',') + '}';
+      }
+      return JSON.stringify(obj);
+    }
+
+    async function runVerify() {
+      const D = window.BLOCKCHAIN_DATA;
+      const farm = D.farmData;
+      const veg = D.vegetable;
+      const tx = D.blockchain.transaction;
+      const con = D.blockchain.contract;
+      const net = D.blockchain.network;
+
+      document.getElementById('resultPanel').className = 'result-panel';
+      document.querySelector('.result-text').textContent = '验证中...';
+      document.querySelector('.result-icon').textContent = '⚡';
+
+      const canonical = canonicalJSON(farm);
+      const sha256 = await window.CryptoUtils.sha256(canonical);
+      const sm3 = window.CryptoUtils.sm3(canonical);
+
+      const chainSha = (veg.sha256Hash || '').replace(/^0x/, '').toLowerCase();
+      const chainSm3 = (veg.sm3Hash || '').replace(/^0x/, '').toLowerCase();
+      const localSha = sha256.toLowerCase();
+      const localSm3 = sm3.toLowerCase();
+
+      const shaMatch = localSha === chainSha;
+      const sm3Match = localSm3 === chainSm3;
+      const allPass = shaMatch && sm3Match;
+
+      // SHA-256
+      document.querySelector('#shaLocal .value').textContent = localSha;
+      document.querySelector('#shaChain .value').textContent = chainSha;
+      document.getElementById('shaLocal').className = 'hash-side ' + (shaMatch ? 'match' : 'mismatch');
+      document.getElementById('shaChain').className = 'hash-side ' + (shaMatch ? 'match' : 'mismatch');
+      document.getElementById('shaVs').textContent = shaMatch ? '✓' : '✗';
+      document.getElementById('shaVs').className = 'hash-vs ' + (shaMatch ? 'ok' : 'bad');
+
+      // SM3
+      document.querySelector('#sm3Local .value').textContent = localSm3;
+      document.querySelector('#sm3Chain .value').textContent = chainSm3;
+      document.getElementById('sm3Local').className = 'hash-side ' + (sm3Match ? 'match' : 'mismatch');
+      document.getElementById('sm3Chain').className = 'hash-side ' + (sm3Match ? 'match' : 'mismatch');
+      document.getElementById('sm3Vs').textContent = sm3Match ? '✓' : '✗';
+      document.getElementById('sm3Vs').className = 'hash-vs ' + (sm3Match ? 'ok' : 'bad');
+
+      // 凭证
+      document.getElementById('v-tx').textContent = tx.hash || '—';
+      document.getElementById('v-block').textContent = '#' + (tx.blockNumber || '?');
+      document.getElementById('v-contract').textContent = con.address || '—';
+      document.getElementById('v-net').textContent = net.name || '—';
+
+      // 结果
+      if (allPass) {
+        document.getElementById('resultPanel').className = 'result-panel';
+        document.querySelector('.result-icon').textContent = '✅';
+        document.querySelector('.result-text').textContent = '验证通过';
+        document.querySelector('.result-desc').textContent = '数据完整性验证通过，与区块链存证完全一致';
+      } else {
+        document.getElementById('resultPanel').className = 'result-panel fail';
+        document.querySelector('.result-icon').textContent = '❌';
+        document.querySelector('.result-text').textContent = '验证失败';
+        document.querySelector('.result-desc').textContent = '数据已被篡改，与区块链存证不一致';
+      }
+    }
+
+    // 粒子
+    (function() {
+      const canvas = document.getElementById('particles');
+      const ctx = canvas.getContext('2d');
+      let p = [], w, h;
+      function r() { w = canvas.width = innerWidth; h = canvas.height = innerHeight; }
+      r(); addEventListener('resize', r);
+      function init() {
+        p = []; const n = Math.min(50, Math.floor(w*h/20000));
+        for (let i=0; i<n; i++) p.push({x:Math.random()*w,y:Math.random()*h,vx:(Math.random()-0.5)*0.3,vy:(Math.random()-0.5)*0.3,r:Math.random()*2+0.5,c:Math.random()>0.5?'0,212,255':'180,0,255'});
+      }
+      init();
+      function d() {
+        ctx.clearRect(0,0,w,h);
+        for (let x of p) {
+          x.x+=x.vx; x.y+=x.vy;
+          if (x.x<0||x.x>w) x.vx*=-1; if (x.y<0||x.y>h) x.vy*=-1;
+          ctx.beginPath(); ctx.arc(x.x,x.y,x.r,0,Math.PI*2);
+          ctx.fillStyle=`rgba(${x.c},0.4)`; ctx.fill();
+        }
+        requestAnimationFrame(d);
+      }
+      d();
+    })();
+
+    runVerify();
+  </script>
+</body>
+</html>
