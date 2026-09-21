@@ -1,0 +1,491 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#02050c" />
+  <title>哈希实验室 · BLOCKCHAIN SHOWCASE</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --cyan: #00e5ff;
+      --blue: #0066ff;
+      --green: #00ff88;
+      --red: #ff4757;
+      --orange: #ff8c00;
+      --purple: #a855f7;
+      --text: #e8f4ff;
+      --text-dim: #6b8aad;
+      --text-muted: #3a4a6a;
+      --glass: rgba(8, 16, 32, 0.55);
+      --border: rgba(0, 229, 255, 0.2);
+    }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif;
+      background: #02050c; color: var(--text);
+      min-height: 100vh; overflow-x: hidden; position: relative;
+    }
+    #bg-canvas { position: fixed; inset: 0; z-index: 0; }
+    .container { position: relative; z-index: 10; max-width: 900px; margin: 0 auto; padding: 0 20px; }
+
+    .nav { display: flex; align-items: center; justify-content: space-between; padding: 16px 0; position: relative; }
+    .nav::after { content: ""; position: absolute; bottom: 0; left: 0; right: 0; height: 1px; background: linear-gradient(90deg, transparent, var(--border), transparent); }
+    .logo { display: flex; align-items: center; gap: 12px; }
+    .logo-mark {
+      width: 36px; height: 36px; border-radius: 8px;
+      background: linear-gradient(135deg, var(--cyan), var(--blue));
+      display: flex; align-items: center; justify-content: center;
+      font-size: 16px; font-weight: 900; color: #02050c;
+      box-shadow: 0 0 20px rgba(0, 229, 255, 0.4);
+    }
+    .logo-text { font-size: 15px; font-weight: 800; letter-spacing: 3px; color: var(--cyan); }
+    .nav-links { display: flex; gap: 4px; flex-wrap: wrap; }
+    .nav-links a { color: var(--text-dim); text-decoration: none; font-size: 12px; padding: 6px 14px; border-radius: 6px; transition: all 0.3s; border: 1px solid transparent; }
+    .nav-links a:hover { color: var(--cyan); border-color: var(--border); background: rgba(0,229,255,0.05); }
+    .nav-links a.active { color: var(--cyan); border-color: rgba(0,229,255,0.3); background: rgba(0,229,255,0.08); }
+
+    .page-head { padding: 36px 0 24px; }
+    .page-tag { font-size: 11px; letter-spacing: 4px; color: var(--cyan); margin-bottom: 10px; }
+    .page-title {
+      font-size: clamp(28px, 5vw, 42px); font-weight: 900;
+      background: linear-gradient(135deg, #fff, var(--cyan));
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+      margin-bottom: 8px;
+    }
+    .page-sub { color: var(--text-dim); font-size: 14px; }
+
+    .glass-card {
+      background: var(--glass); backdrop-filter: blur(16px);
+      border: 1px solid var(--border); border-radius: 16px;
+      padding: 24px; margin-bottom: 20px; position: relative; overflow: hidden;
+    }
+    .glass-card::before {
+      content: ""; position: absolute; top: 0; left: 0; right: 0; height: 2px;
+      background: linear-gradient(90deg, transparent, var(--cyan), var(--blue), transparent);
+    }
+    .card-title {
+      display: flex; align-items: center; justify-content: space-between;
+      font-size: 14px; font-weight: 700; color: var(--cyan);
+      margin-bottom: 18px; letter-spacing: 1px;
+    }
+    .card-title::before {
+      content: ""; width: 3px; height: 14px; margin-right: 10px;
+      background: linear-gradient(180deg, var(--green), var(--cyan)); border-radius: 2px;
+    }
+    .card-title .left { display: flex; align-items: center; }
+    .card-title .right { font-size: 11px; color: var(--text-dim); }
+
+    /* 输入区 */
+    .hash-input {
+      width: 100%; min-height: 140px;
+      background: rgba(0,0,0,0.3); border: 1px solid var(--border);
+      border-radius: 10px; padding: 16px; color: var(--text);
+      font-family: monospace; font-size: 13px; line-height: 1.6;
+      resize: vertical; outline: none; transition: border 0.3s;
+    }
+    .hash-input:focus { border-color: var(--cyan); }
+
+    .hash-tabs { display: flex; gap: 8px; margin: 18px 0 12px; flex-wrap: wrap; }
+    .tab-btn {
+      padding: 8px 18px; border-radius: 8px; font-size: 12px; font-weight: 700;
+      background: rgba(0,0,0,0.2); color: var(--text-dim);
+      border: 1px solid var(--border); cursor: pointer; transition: all 0.3s;
+    }
+    .tab-btn.active {
+      background: linear-gradient(135deg, rgba(0,229,255,0.15), rgba(0,102,255,0.1));
+      color: var(--cyan); border-color: var(--cyan);
+    }
+
+    /* 哈希结果展示 */
+    .hash-result {
+      background: rgba(0,0,0,0.35); border: 1px solid var(--border);
+      border-radius: 10px; padding: 16px; margin-top: 12px;
+    }
+    .hash-result .hl { font-size: 10px; color: var(--text-dim); letter-spacing: 2px; text-transform: uppercase; margin-bottom: 8px; }
+    .hash-result .hv {
+      font-family: monospace; font-size: 13px; word-break: break-all;
+      color: var(--green); line-height: 1.6;
+    }
+    .hash-result.sm3 .hv { color: var(--purple); }
+    .hash-result .hlen { font-size: 10px; color: var(--text-muted); margin-top: 6px; }
+
+    /* 篡改演示 */
+    .tamper-demo { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+    @media (max-width: 700px) { .tamper-demo { grid-template-columns: 1fr; } }
+    .tamper-side {
+      background: rgba(0,0,0,0.25); border: 1px solid var(--border);
+      border-radius: 12px; padding: 16px; transition: all 0.3s;
+    }
+    .tamper-side.tampered { border-color: var(--red); }
+    .tamper-side .ts-label {
+      display: flex; align-items: center; gap: 8px;
+      font-size: 13px; font-weight: 700; margin-bottom: 10px;
+    }
+    .ts-badge {
+      padding: 2px 10px; border-radius: 999px; font-size: 10px; font-weight: 700;
+    }
+    .ts-badge.ok { background: rgba(0, 255, 136, 0.1); color: var(--green); border: 1px solid rgba(0,255,136,0.3); }
+    .ts-badge.bad { background: rgba(255, 71, 87, 0.1); color: var(--red); border: 1px solid rgba(255,71,87,0.3); }
+    .tamper-text {
+      font-family: monospace; font-size: 12px; line-height: 1.6;
+      color: var(--text); min-height: 80px; word-break: break-all;
+      padding: 10px; background: rgba(0,0,0,0.3); border-radius: 6px;
+      margin-bottom: 10px;
+    }
+    .tamper-text .diff { background: rgba(255, 71, 87, 0.3); color: #ff9da4; text-decoration: line-through; }
+    .tamper-text .new { background: rgba(0, 255, 136, 0.3); color: var(--green); }
+    .tamper-hash { font-family: monospace; font-size: 11px; color: var(--green); word-break: break-all; padding: 8px; background: rgba(0,255,136,0.05); border-radius: 6px; }
+    .tamper-side.tampered .tamper-hash { color: var(--red); background: rgba(255,71,87,0.05); }
+
+    .vs-badge {
+      position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%);
+      width: 40px; height: 40px; border-radius: 50%;
+      background: linear-gradient(135deg, var(--orange), var(--red));
+      display: flex; align-items: center; justify-content: center;
+      font-size: 14px; font-weight: 900; color: #02050c;
+      box-shadow: 0 0 20px rgba(255, 140, 0, 0.4); z-index: 2;
+    }
+    .tamper-wrap { position: relative; }
+
+    .tamper-btn {
+      display: block; width: 100%;
+      padding: 14px; border-radius: 10px;
+      background: linear-gradient(135deg, var(--red), var(--orange));
+      color: #02050c; font-size: 14px; font-weight: 800;
+      border: none; cursor: pointer; transition: all 0.3s;
+      margin-top: 16px;
+    }
+    .tamper-btn:hover { transform: translateY(-2px); box-shadow: 0 6px 25px rgba(255, 71, 87, 0.4); }
+
+    /* 特性网格 */
+    .features {
+      display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px;
+    }
+    @media (max-width: 600px) { .features { grid-template-columns: 1fr; } }
+    .feat {
+      background: rgba(0,0,0,0.2); border: 1px solid var(--border);
+      border-radius: 10px; padding: 16px; text-align: center;
+    }
+    .feat .ficon { font-size: 24px; margin-bottom: 8px; }
+    .feat h4 { font-size: 13px; margin-bottom: 4px; }
+    .feat p { font-size: 11px; color: var(--text-dim); line-height: 1.5; }
+
+    .footer { padding: 30px 0; text-align: center; color: var(--text-dim); font-size: 11px; border-top: 1px solid var(--border); margin-top: 20px; }
+    .footer a { color: var(--cyan); text-decoration: none; }
+  </style>
+</head>
+<body>
+  <canvas id="bg-canvas"></canvas>
+  <div class="container">
+    <nav class="nav">
+      <div class="logo">
+        <div class="logo-mark">B</div>
+        <span class="logo-text">BLOCKCHAIN</span>
+      </div>
+      <div class="nav-links">
+        <a href="./index.html">首页</a>
+        <a href="./blocks.html">区块</a>
+        <a href="./hash.html" class="active">哈希</a>
+        <a href="./consensus.html">共识</a>
+        <a href="../scifi/index.html">溯源版 ↗</a>
+      </div>
+    </nav>
+
+    <div class="page-head">
+      <div class="page-tag">// HASH LABORATORY</div>
+      <h1 class="page-title">哈希实验室</h1>
+      <p class="page-sub">SHA-256 + 国密 SM3 · 实时计算 · 篡改演示</p>
+    </div>
+
+    <!-- 实时哈希计算 -->
+    <div class="glass-card">
+      <div class="card-title">
+        <div class="left">实时哈希计算 // LIVE HASH</div>
+        <div class="right">输入任意文字，即时生成哈希</div>
+      </div>
+      <textarea class="hash-input" id="hashInput" placeholder="在这里输入文字...">番茄的品种是普罗旺斯番茄，产地是山东省寿光市</textarea>
+
+      <div class="hash-tabs">
+        <button class="tab-btn active" onclick="switchHash('sha256')">SHA-256</button>
+        <button class="tab-btn" onclick="switchHash('sm3')">SM3 国密</button>
+        <button class="tab-btn" onclick="switchHash('both')">双哈希</button>
+      </div>
+
+      <div id="sha256Result" class="hash-result">
+        <div class="hl">SHA-256 哈希</div>
+        <div class="hv" id="sha256Val">计算中...</div>
+        <div class="hlen">256 bits · 32 bytes · 64 hex chars</div>
+      </div>
+
+      <div id="sm3Result" class="hash-result sm3" style="display:none;">
+        <div class="hl">SM3 国密哈希</div>
+        <div class="hv" id="sm3Val">计算中...</div>
+        <div class="hlen">256 bits · 32 bytes · 64 hex chars · GB/T 32905-2016</div>
+      </div>
+    </div>
+
+    <!-- 篡改演示 -->
+    <div class="glass-card">
+      <div class="card-title">
+        <div class="left">篡改演示 // TAMPER DEMO</div>
+        <div class="right">改一个字，哈希完全不同</div>
+      </div>
+
+      <div class="tamper-wrap">
+        <div class="tamper-demo">
+          <div class="tamper-side" id="origSide">
+            <div class="ts-label">原始数据 <span class="ts-badge ok">✓ 完整</span></div>
+            <div class="tamper-text" id="origText">番茄品种：普罗旺斯番茄
+产地：山东省寿光市
+种植方式：温室种植
+采收重量：2860kg</div>
+            <div class="tamper-hash" id="origHash">af08d84a7f3c9e2d1b4a6c8f0e2d4a6b8c0e2f4a6b8c0d2e4f6a8b0c2d4e6f8a</div>
+          </div>
+          <div class="tamper-side" id="tampSide">
+            <div class="ts-label">篡改后 <span class="ts-badge bad">✗ 已篡改</span></div>
+            <div class="tamper-text" id="tampText">番茄品种：普罗旺斯番茄
+产地：山东省寿光市
+种植方式：温室种植
+采收重量：<span class="diff">2860kg</span> <span class="new">3860kg</span></div>
+            <div class="tamper-hash" id="tampHash">7b2f1d5c8e3a9b4f6d0c2e8a4b6f0d2c8e4a0b6f2d8c4e0a6b2f8d4c0e6a2b8</div>
+          </div>
+        </div>
+        <div class="vs-badge">VS</div>
+      </div>
+
+      <button class="tamper-btn" onclick="doTamper()">⚠ 模拟数据篡改</button>
+
+      <div style="margin-top:18px; padding:14px; background:rgba(255,71,87,0.05); border:1px solid rgba(255,71,87,0.2); border-radius:10px;">
+        <div style="color:var(--red); font-size:13px; font-weight:700; margin-bottom:6px;">💡 防篡改原理</div>
+        <div style="color:var(--text-dim); font-size:12px; line-height:1.7;">
+          只改了一个数字（2860 → 3860），但哈希值完全变了。区块链上每个区块都存着前一个区块的哈希，
+          所以改任何一个区块，后面所有区块的哈希都会失效，这就是区块链不可篡改的密码学基础。
+        </div>
+      </div>
+    </div>
+
+    <!-- 哈希特性 -->
+    <div class="glass-card">
+      <div class="card-title">
+        <div class="left">哈希函数四大特性 // PROPERTIES</div>
+      </div>
+      <div class="features">
+        <div class="feat">
+          <div class="ficon">🎯</div>
+          <h4>确定性</h4>
+          <p>相同输入永远得到相同输出，可重复验证</p>
+        </div>
+        <div class="feat">
+          <div class="ficon">🚫</div>
+          <h4>单向性</h4>
+          <p>无法从哈希值反推原始数据，不可逆</p>
+        </div>
+        <div class="feat">
+          <div class="ficon">💥</div>
+          <h4>雪崩效应</h4>
+          <p>输入微小变化导致输出完全不同</p>
+        </div>
+        <div class="feat">
+          <div class="ficon">🛡</div>
+          <h4>抗碰撞性</h4>
+          <p>几乎不可能找到两个不同输入产生相同哈希</p>
+        </div>
+        <div class="feat">
+          <div class="ficon">📐</div>
+          <h4>固定长度</h4>
+          <p>无论输入多长，输出长度固定（256位）</p>
+        </div>
+        <div class="feat">
+          <div class="ficon">⚡</div>
+          <h4>高效计算</h4>
+          <p>计算速度快，适合大规模数据验证</p>
+        </div>
+      </div>
+    </div>
+
+    <footer class="footer">
+      <p>BLOCKCHAIN SHOWCASE · 哈希实验室</p>
+      <p style="margin-top:8px;"><a href="./index.html">返回首页</a></p>
+    </footer>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js"></script>
+  <script>
+    // 背景粒子
+    const canvas = document.getElementById('bg-canvas');
+    const scene = new THREE.Scene();
+    const camera = new THREE.PerspectiveCamera(70, innerWidth / innerHeight, 0.1, 100);
+    camera.position.z = 20;
+    const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
+    renderer.setPixelRatio(Math.min(devicePixelRatio, 1.5));
+    renderer.setSize(innerWidth, innerHeight);
+    const N = 600;
+    const pos = new Float32Array(N * 3);
+    const col = new Float32Array(N * 3);
+    for (let i = 0; i < N; i++) {
+      pos[i*3] = (Math.random()-0.5) * 50;
+      pos[i*3+1] = (Math.random()-0.5) * 60;
+      pos[i*3+2] = (Math.random()-0.5) * 20 - 10;
+      const r = Math.random();
+      if (r < 0.6) { col[i*3]=0; col[i*3+1]=0.9; col[i*3+2]=1; }
+      else if (r < 0.85) { col[i*3]=0; col[i*3+1]=1; col[i*3+2]=0.5; }
+      else { col[i*3]=0.7; col[i*3+1]=0.8; col[i*3+2]=1; }
+    }
+    const geo = new THREE.BufferGeometry();
+    geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+    geo.setAttribute('color', new THREE.BufferAttribute(col, 3));
+    const mat = new THREE.PointsMaterial({ size: 0.04, vertexColors: true, transparent: true, opacity: 0.5 });
+    const stars = new THREE.Points(geo, mat);
+    scene.add(stars);
+    let t = 0;
+    function anim() {
+      requestAnimationFrame(anim);
+      t += 0.005;
+      stars.rotation.y = t * 0.2;
+      stars.rotation.x = Math.sin(t * 0.1) * 0.1;
+      renderer.render(scene, camera);
+    }
+    anim();
+    addEventListener('resize', () => { camera.aspect = innerWidth/innerHeight; camera.updateProjectionMatrix(); renderer.setSize(innerWidth, innerHeight); });
+
+    // ============================================================
+    // SHA-256 实现（浏览器端）
+    // ============================================================
+    async function sha256(text) {
+      const buf = new TextEncoder().encode(text);
+      const hash = await crypto.subtle.digest('SHA-256', buf);
+      return Array.from(new Uint8Array(hash)).map(b => b.toString(16).padStart(2, '0')).join('');
+    }
+
+    // ============================================================
+    // SM3 国密哈希实现
+    // ============================================================
+    function sm3(msg) {
+      const T = [];
+      for (let i = 0; i < 16; i++) T.push(0x79cc4519);
+      for (let i = 16; i < 64; i++) T.push(0x7a879d8a);
+
+      function FF(x, y, z, j) {
+        if (j < 16) return x ^ y ^ z;
+        return (x & y) | (x & z) | (y & z);
+      }
+      function GG(x, y, z, j) {
+        if (j < 16) return x ^ y ^ z;
+        return (x & y) | (~x & z);
+      }
+      function P0(x) { return x ^ rol(x, 9) ^ rol(x, 17); }
+      function P1(x) { return x ^ rol(x, 15) ^ rol(x, 23); }
+      function rol(x, n) { return ((x << n) | (x >>> (32 - n))) >>> 0; }
+
+      // 编码
+      const str = unescape(encodeURIComponent(msg));
+      const len = str.length;
+      const bitLen = len * 8;
+      const buf = [];
+      for (let i = 0; i < len; i++) buf.push(str.charCodeAt(i));
+      buf.push(0x80);
+      while (buf.length % 64 !== 56) buf.push(0);
+      for (let i = 0; i < 8; i++) buf.push(0); // 64-bit length (high 32 bits = 0)
+      buf[buf.length - 4] = (bitLen >>> 24) & 0xff;
+      buf[buf.length - 3] = (bitLen >>> 16) & 0xff;
+      buf[buf.length - 2] = (bitLen >>> 8) & 0xff;
+      buf[buf.length - 1] = bitLen & 0xff;
+
+      let V = [0x7380166f, 0x4914b2b9, 0x172442d7, 0xda8a0600, 0xa96f30bc, 0x163138aa, 0xe38dee4d, 0xb0fb0e4e];
+
+      for (let offset = 0; offset < buf.length; offset += 64) {
+        const W = new Array(68);
+        const W2 = new Array(64);
+        for (let i = 0; i < 16; i++) {
+          W[i] = (buf[offset+i*4]<<24) | (buf[offset+i*4+1]<<16) | (buf[offset+i*4+2]<<8) | buf[offset+i*4+3];
+          W[i] = W[i] >>> 0;
+        }
+        for (let j = 16; j < 68; j++) {
+          W[j] = P1(W[j-16] ^ W[j-9] ^ rol(W[j-3], 15)) ^ rol(W[j-13], 7) ^ W[j-6];
+          W[j] = W[j] >>> 0;
+        }
+        for (let j = 0; j < 64; j++) {
+          W2[j] = W[j] ^ W[j+4];
+        }
+
+        let [A, B, C, D, E, F, G, H] = V;
+        for (let j = 0; j < 64; j++) {
+          const SS1 = rol((rol(A, 12) + E + rol(T[j], j % 32)) >>> 0, 7);
+          const SS2 = SS1 ^ rol(A, 12);
+          const TT1 = (FF(A, B, C, j) + D + SS2 + W2[j]) >>> 0;
+          const TT2 = (GG(E, F, G, j) + H + SS1 + W[j]) >>> 0;
+          D = C;
+          C = rol(B, 9);
+          B = A;
+          A = TT1;
+          H = G;
+          G = rol(F, 19);
+          F = E;
+          E = P0(TT2);
+        }
+        V = [V[0]^A, V[1]^B, V[2]^C, V[3]^D, V[4]^E, V[5]^F, V[6]^G, V[7]^H];
+      }
+
+      return V.map(v => (v >>> 0).toString(16).padStart(8, '0')).join('');
+    }
+
+    // ============================================================
+    // 实时计算
+    // ============================================================
+    const input = document.getElementById('hashInput');
+    let currentMode = 'sha256';
+
+    function updateHash() {
+      const text = input.value;
+      if (currentMode === 'sha256' || currentMode === 'both') {
+        sha256(text).then(h => {
+          document.getElementById('sha256Val').textContent = h;
+        });
+      }
+      if (currentMode === 'sm3' || currentMode === 'both') {
+        document.getElementById('sm3Val').textContent = sm3(text);
+      }
+    }
+
+    function switchHash(mode) {
+      currentMode = mode;
+      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+      event.target.classList.add('active');
+      const shaEl = document.getElementById('sha256Result');
+      const sm3El = document.getElementById('sm3Result');
+      if (mode === 'sha256') { shaEl.style.display = 'block'; sm3El.style.display = 'none'; }
+      else if (mode === 'sm3') { shaEl.style.display = 'none'; sm3El.style.display = 'block'; }
+      else { shaEl.style.display = 'block'; sm3El.style.display = 'block'; }
+      updateHash();
+    }
+
+    input.addEventListener('input', updateHash);
+    updateHash();
+
+    // 篡改动画
+    let tampered = false;
+    function doTamper() {
+      const btn = event.target;
+      const tampSide = document.getElementById('tampSide');
+      if (!tampered) {
+        tampSide.classList.add('tampered');
+        btn.textContent = '恢复原始数据';
+        // 震动效果
+        tampSide.style.animation = 'shake 0.4s';
+        setTimeout(() => tampSide.style.animation = '', 400);
+      } else {
+        tampSide.classList.remove('tampered');
+        btn.textContent = '⚠ 模拟数据篡改';
+      }
+      tampered = !tampered;
+    }
+  </script>
+  <style>
+    @keyframes shake {
+      0%, 100% { transform: translateX(0); }
+      25% { transform: translateX(-8px); }
+      75% { transform: translateX(8px); }
+    }
+  </style>
+</body>
+</html>

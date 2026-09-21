@@ -1,0 +1,454 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#02050c" />
+  <title>区块浏览器 · BLOCKCHAIN SHOWCASE</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --cyan: #00e5ff;
+      --blue: #0066ff;
+      --purple: #7b2fff;
+      --green: #00ff88;
+      --orange: #ff8c00;
+      --text: #e8f4ff;
+      --text-dim: #6b8aad;
+      --text-muted: #3a4a6a;
+      --glass: rgba(8, 16, 32, 0.55);
+      --border: rgba(0, 229, 255, 0.2);
+    }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif;
+      background: #02050c; color: var(--text);
+      min-height: 100vh; overflow-x: hidden; position: relative;
+    }
+    #bg-canvas { position: fixed; inset: 0; z-index: 0; }
+    .container { position: relative; z-index: 10; max-width: 1100px; margin: 0 auto; padding: 0 20px; }
+
+    .nav {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 16px 0; position: relative;
+    }
+    .nav::after { content: ""; position: absolute; bottom: 0; left: 0; right: 0; height: 1px; background: linear-gradient(90deg, transparent, var(--border), transparent); }
+    .logo { display: flex; align-items: center; gap: 12px; }
+    .logo-mark {
+      width: 36px; height: 36px; border-radius: 8px;
+      background: linear-gradient(135deg, var(--cyan), var(--blue));
+      display: flex; align-items: center; justify-content: center;
+      font-size: 16px; font-weight: 900; color: #02050c;
+      box-shadow: 0 0 20px rgba(0, 229, 255, 0.4);
+    }
+    .logo-text { font-size: 15px; font-weight: 800; letter-spacing: 3px; color: var(--cyan); }
+    .nav-links { display: flex; gap: 4px; flex-wrap: wrap; }
+    .nav-links a { color: var(--text-dim); text-decoration: none; font-size: 12px; padding: 6px 14px; border-radius: 6px; transition: all 0.3s; border: 1px solid transparent; }
+    .nav-links a:hover { color: var(--cyan); border-color: var(--border); background: rgba(0,229,255,0.05); }
+    .nav-links a.active { color: var(--cyan); border-color: rgba(0,229,255,0.3); background: rgba(0,229,255,0.08); }
+
+    .page-head { padding: 36px 0 24px; }
+    .page-tag { font-size: 11px; letter-spacing: 4px; color: var(--cyan); margin-bottom: 10px; }
+    .page-title {
+      font-size: clamp(28px, 5vw, 42px); font-weight: 900;
+      background: linear-gradient(135deg, #fff, var(--cyan));
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+      margin-bottom: 8px;
+    }
+    .page-sub { color: var(--text-dim); font-size: 14px; }
+
+    .live-bar {
+      display: flex; align-items: center; gap: 20px; flex-wrap: wrap;
+      background: var(--glass); backdrop-filter: blur(16px);
+      border: 1px solid var(--border); border-radius: 12px;
+      padding: 16px 22px; margin-bottom: 24px;
+    }
+    .live-item { display: flex; align-items: center; gap: 10px; }
+    .live-dot {
+      width: 8px; height: 8px; border-radius: 50%;
+      background: var(--green); box-shadow: 0 0 10px var(--green);
+      animation: pulse 1.5s ease-in-out infinite;
+    }
+    @keyframes pulse { 0%,100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.5; transform: scale(1.4); } }
+    .live-label { font-size: 11px; color: var(--text-dim); }
+    .live-value { font-size: 16px; font-weight: 700; font-family: monospace; color: var(--cyan); }
+    .live-value.green { color: var(--green); }
+    .live-value.gold { color: var(--orange); }
+
+    .glass-card {
+      background: var(--glass); backdrop-filter: blur(16px);
+      border: 1px solid var(--border); border-radius: 16px;
+      padding: 22px; margin-bottom: 20px; position: relative; overflow: hidden;
+    }
+    .glass-card::before {
+      content: ""; position: absolute; top: 0; left: 0; right: 0; height: 2px;
+      background: linear-gradient(90deg, transparent, var(--cyan), var(--blue), transparent);
+    }
+    .card-title {
+      display: flex; align-items: center; justify-content: space-between;
+      font-size: 14px; font-weight: 700; color: var(--cyan);
+      margin-bottom: 18px; letter-spacing: 1px;
+    }
+    .card-title::before {
+      content: ""; width: 3px; height: 14px; margin-right: 10px;
+      background: linear-gradient(180deg, var(--green), var(--cyan)); border-radius: 2px;
+    }
+    .card-title .left { display: flex; align-items: center; }
+    .card-title .right { font-size: 11px; color: var(--text-dim); font-weight: 500; }
+
+    /* 区块时间轴 */
+    .block-timeline { position: relative; padding-left: 40px; }
+    .block-timeline::before {
+      content: ""; position: absolute; left: 12px; top: 0; bottom: 0; width: 2px;
+      background: linear-gradient(180deg, var(--cyan), var(--blue), var(--purple));
+    }
+    .block-item {
+      position: relative; margin-bottom: 28px; cursor: pointer;
+      transition: transform 0.3s;
+    }
+    .block-item:hover { transform: translateX(6px); }
+    .block-item::before {
+      content: ""; position: absolute; left: -34px; top: 20px;
+      width: 14px; height: 14px; border-radius: 50%;
+      background: #02050c; border: 2px solid var(--cyan);
+      box-shadow: 0 0 12px var(--cyan);
+      z-index: 1;
+    }
+    .block-item.genesis::before { border-color: var(--green); box-shadow: 0 0 12px var(--green); }
+
+    .block-card {
+      background: rgba(0, 229, 255, 0.04);
+      border: 1px solid var(--border);
+      border-radius: 12px; padding: 18px;
+      transition: all 0.3s;
+    }
+    .block-item:hover .block-card {
+      border-color: var(--cyan);
+      background: rgba(0, 229, 255, 0.08);
+    }
+    .block-head {
+      display: flex; justify-content: space-between; align-items: center;
+      margin-bottom: 12px; flex-wrap: wrap; gap: 8px;
+    }
+    .block-num {
+      font-size: 20px; font-weight: 900; font-family: monospace;
+      color: var(--cyan);
+    }
+    .block-item.genesis .block-num { color: var(--green); }
+    .block-time { font-size: 11px; color: var(--text-dim); }
+    .block-hash {
+      font-family: monospace; font-size: 12px; color: var(--text-dim);
+      background: rgba(0,0,0,0.3); padding: 8px 12px; border-radius: 6px;
+      word-break: break-all; margin-bottom: 10px;
+    }
+    .block-hash .k { color: var(--text-muted); }
+    .block-hash .v { color: var(--cyan); }
+    .block-meta { display: flex; gap: 20px; flex-wrap: wrap; font-size: 11px; }
+    .bm { color: var(--text-dim); }
+    .bm b { color: var(--text); font-weight: 600; margin-left: 4px; }
+
+    /* 交易列表 */
+    .tx-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+    .tx-table th {
+      text-align: left; padding: 10px 14px;
+      font-size: 10px; text-transform: uppercase; letter-spacing: 1px;
+      color: var(--text-dim); font-weight: 600;
+      border-bottom: 1px solid var(--border);
+    }
+    .tx-table td {
+      padding: 12px 14px;
+      border-bottom: 1px solid rgba(0, 229, 255, 0.06);
+      font-family: monospace;
+    }
+    .tx-table tr:hover td { background: rgba(0, 229, 255, 0.03); }
+    .tx-hash { color: var(--cyan); font-size: 11px; }
+    .tx-method {
+      display: inline-block; padding: 3px 10px; border-radius: 999px;
+      font-size: 10px; font-weight: 700; font-family: sans-serif;
+      background: rgba(0, 255, 136, 0.1); color: var(--green);
+      border: 1px solid rgba(0, 255, 136, 0.3);
+    }
+    .tx-method.deploy { background: rgba(255, 140, 0, 0.1); color: var(--orange); border-color: rgba(255, 140, 0, 0.3); }
+    .tx-from, .tx-to { font-size: 11px; color: var(--text-dim); }
+
+    /* 区块详情 */
+    .detail-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 14px; }
+    @media (max-width: 600px) { .detail-grid { grid-template-columns: 1fr; } }
+    .detail-item {
+      background: rgba(0,0,0,0.25); border: 1px solid var(--border);
+      border-radius: 10px; padding: 14px;
+    }
+    .detail-item .dl { font-size: 10px; color: var(--text-dim); letter-spacing: 1px; text-transform: uppercase; margin-bottom: 6px; }
+    .detail-item .dv { font-family: monospace; font-size: 13px; color: var(--cyan); word-break: break-all; }
+    .detail-item .dv.green { color: var(--green); }
+    .detail-item .dv.gold { color: var(--orange); }
+
+    .footer { padding: 30px 0; text-align: center; color: var(--text-dim); font-size: 11px; border-top: 1px solid var(--border); margin-top: 20px; }
+    .footer a { color: var(--cyan); text-decoration: none; }
+  </style>
+</head>
+<body>
+  <canvas id="bg-canvas"></canvas>
+  <div class="container">
+    <nav class="nav">
+      <div class="logo">
+        <div class="logo-mark">B</div>
+        <span class="logo-text">BLOCKCHAIN</span>
+      </div>
+      <div class="nav-links">
+        <a href="./index.html">首页</a>
+        <a href="./blocks.html" class="active">区块</a>
+        <a href="./hash.html">哈希</a>
+        <a href="./consensus.html">共识</a>
+        <a href="../scifi/index.html">溯源版 ↗</a>
+      </div>
+    </nav>
+
+    <div class="page-head">
+      <div class="page-tag">// BLOCK EXPLORER</div>
+      <h1 class="page-title">区块浏览器</h1>
+      <p class="page-sub">FISCO BCOS v2.9.1 联盟链 · 实时链上数据</p>
+    </div>
+
+    <!-- 实时状态栏 -->
+    <div class="live-bar">
+      <div class="live-item">
+        <span class="live-dot"></span>
+        <div>
+          <div class="live-label">当前区块高度</div>
+          <div class="live-value"># 2</div>
+        </div>
+      </div>
+      <div class="live-item">
+        <div>
+          <div class="live-label">交易总数</div>
+          <div class="live-value green">2</div>
+        </div>
+      </div>
+      <div class="live-item">
+        <div>
+          <div class="live-label">活跃节点</div>
+          <div class="live-value">4 / 4</div>
+        </div>
+      </div>
+      <div class="live-item">
+        <div>
+          <div class="live-label">共识视图</div>
+          <div class="live-value gold" id="viewNum">478</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 区块时间轴 -->
+    <div class="glass-card">
+      <div class="card-title">
+        <div class="left">链上区块 // BLOCKS</div>
+        <div class="right">最新 3 个区块</div>
+      </div>
+
+      <div class="block-timeline">
+        <!-- 区块 #2 -->
+        <div class="block-item">
+          <div class="block-card">
+            <div class="block-head">
+              <div class="block-num"># 2</div>
+              <div class="block-time">2026-09-20 12:39:49 UTC+8</div>
+            </div>
+            <div class="block-hash"><span class="k">Block Hash:</span> <span class="v">0x593999ee1921102fe0ac3e750fa004ee9740fa69624a20b778d3b712c2811a12</span></div>
+            <div class="block-hash"><span class="k">Parent Hash:</span> <span class="v">0x7f8a3b2c9e5d1a4f8c7e6b5d4a3f2e1c0d9e8f7a6b5c4d3e2f1a0b9c8d7e6f</span></div>
+            <div class="block-meta">
+              <div class="bm">交易数<b>1</b></div>
+              <div class="bm">Gas 消耗<b>284,876</b></div>
+              <div class="bm">出块节点<b>node0</b></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 区块 #1 -->
+        <div class="block-item">
+          <div class="block-card">
+            <div class="block-head">
+              <div class="block-num"># 1</div>
+              <div class="block-time">2026-09-20 12:38:51 UTC+8</div>
+            </div>
+            <div class="block-hash"><span class="k">Block Hash:</span> <span class="v">0x7f8a3b2c9e5d1a4f8c7e6b5d4a3f2e1c0d9e8f7a6b5c4d3e2f1a0b9c8d7e6f5a</span></div>
+            <div class="block-hash"><span class="k">Parent Hash:</span> <span class="v">0x0000000000000000000000000000000000000000000000000000000000000000</span></div>
+            <div class="block-meta">
+              <div class="bm">交易数<b>1</b></div>
+              <div class="bm">Gas 消耗<b>1,500,000</b></div>
+              <div class="bm">出块节点<b>node1</b></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 创世区块 -->
+        <div class="block-item genesis">
+          <div class="block-card">
+            <div class="block-head">
+              <div class="block-num"># 0 · 创世区块</div>
+              <div class="block-time">2026-09-20 12:35:00 UTC+8</div>
+            </div>
+            <div class="block-hash"><span class="k">Block Hash:</span> <span class="v">0x0000000000000000000000000000000000000000000000000000000000000000</span></div>
+            <div class="block-meta">
+              <div class="bm">交易数<b>0</b></div>
+              <div class="bm">类型<b>创世区块</b></div>
+              <div class="bm">共识节点<b>4 节点</b></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 区块 #2 详情 -->
+    <div class="glass-card">
+      <div class="card-title">
+        <div class="left">区块 #2 详情 // BLOCK #2 DETAIL</div>
+        <div class="right">最新区块</div>
+      </div>
+      <div class="detail-grid">
+        <div class="detail-item">
+          <div class="dl">区块哈希</div>
+          <div class="dv">0x593999ee1921102fe0ac3e750fa004ee9740fa69624a20b778d3b712c2811a12</div>
+        </div>
+        <div class="detail-item">
+          <div class="dl">父区块哈希</div>
+          <div class="dv">0x7f8a3b2c9e5d1a4f8c7e6b5d4a3f2e1c0d9e8f7a6b5c4d3e2f1a0b9c8d7e6f</div>
+        </div>
+        <div class="detail-item">
+          <div class="dl">区块高度</div>
+          <div class="dv green">2</div>
+        </div>
+        <div class="detail-item">
+          <div class="dl">交易数量</div>
+          <div class="dv green">1</div>
+        </div>
+        <div class="detail-item">
+          <div class="dl">时间戳</div>
+          <div class="dv">2026-09-20T12:39:49.950+08:00</div>
+        </div>
+        <div class="detail-item">
+          <div class="dl">Gas Used</div>
+          <div class="dv gold">284,876 / 30,000,000</div>
+        </div>
+        <div class="detail-item">
+          <div class="dl">出块节点</div>
+          <div class="dv">node0 (Sealer)</div>
+        </div>
+        <div class="detail-item">
+          <div class="dl">共识签名数</div>
+          <div class="dv">3 / 4 (PBFT)</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 交易列表 -->
+    <div class="glass-card">
+      <div class="card-title">
+        <div class="left">交易列表 // TRANSACTIONS</div>
+        <div class="right">区块 #2</div>
+      </div>
+      <table class="tx-table">
+        <thead>
+          <tr>
+            <th>交易哈希</th>
+            <th>方法</th>
+            <th>发送方</th>
+            <th>接收方</th>
+            <th>Gas</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="tx-hash">0x5939...1a12</td>
+            <td><span class="tx-method">registerVegetable</span></td>
+            <td class="tx-from">0xf39F...2266</td>
+            <td class="tx-to">0x522a...72a9</td>
+            <td style="color:var(--orange);font-family:monospace;">284,876</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- 区块 #1 交易 -->
+    <div class="glass-card">
+      <div class="card-title">
+        <div class="left">区块 #1 交易 // BLOCK #1 TX</div>
+        <div class="right">合约部署</div>
+      </div>
+      <table class="tx-table">
+        <thead>
+          <tr>
+            <th>交易哈希</th>
+            <th>方法</th>
+            <th>发送方</th>
+            <th>合约地址</th>
+            <th>Gas</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="tx-hash">0x7f8a...6f5a</td>
+            <td><span class="tx-method deploy">Contract Create</span></td>
+            <td class="tx-from">0xf39F...2266</td>
+            <td class="tx-to">0x522a...72a9</td>
+            <td style="color:var(--orange);font-family:monospace;">1,500,000</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <footer class="footer">
+      <p>BLOCKCHAIN SHOWCASE · 区块浏览器</p>
+      <p style="margin-top:8px;"><a href="./index.html">返回首页</a></p>
+    </footer>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js"></script>
+  <script>
+    // 背景粒子
+    const canvas = document.getElementById('bg-canvas');
+    const scene = new THREE.Scene();
+    const camera = new THREE.PerspectiveCamera(70, innerWidth / innerHeight, 0.1, 100);
+    camera.position.z = 20;
+    const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
+    renderer.setPixelRatio(Math.min(devicePixelRatio, 1.5));
+    renderer.setSize(innerWidth, innerHeight);
+
+    const N = 800;
+    const pos = new Float32Array(N * 3);
+    const col = new Float32Array(N * 3);
+    for (let i = 0; i < N; i++) {
+      pos[i*3] = (Math.random()-0.5) * 50;
+      pos[i*3+1] = (Math.random()-0.5) * 80;
+      pos[i*3+2] = (Math.random()-0.5) * 20 - 10;
+      const r = Math.random();
+      if (r < 0.6) { col[i*3]=0.3; col[i*3+1]=0.5; col[i*3+2]=1; }
+      else if (r < 0.85) { col[i*3]=0; col[i*3+1]=0.9; col[i*3+2]=1; }
+      else { col[i*3]=0; col[i*3+1]=1; col[i*3+2]=0.5; }
+    }
+    const geo = new THREE.BufferGeometry();
+    geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+    geo.setAttribute('color', new THREE.BufferAttribute(col, 3));
+    const mat = new THREE.PointsMaterial({ size: 0.04, vertexColors: true, transparent: true, opacity: 0.5 });
+    const stars = new THREE.Points(geo, mat);
+    scene.add(stars);
+
+    let t = 0;
+    function anim() {
+      requestAnimationFrame(anim);
+      t += 0.005;
+      stars.rotation.y = t * 0.3;
+      stars.position.y = Math.sin(t * 0.2) * 0.5;
+      renderer.render(scene, camera);
+    }
+    anim();
+    addEventListener('resize', () => { camera.aspect = innerWidth/innerHeight; camera.updateProjectionMatrix(); renderer.setSize(innerWidth, innerHeight); });
+
+    // 共识视图实时变化
+    let view = 478;
+    setInterval(() => {
+      view += Math.floor(Math.random() * 3);
+      document.getElementById('viewNum').textContent = view;
+    }, 4000);
+  </script>
+</body>
+</html>

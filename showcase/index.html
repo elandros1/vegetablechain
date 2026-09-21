@@ -1,0 +1,556 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#02050c" />
+  <title>BLOCKCHAIN SHOWCASE · 区块链技术沉浸展示</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --cyan: #00e5ff;
+      --blue: #0066ff;
+      --purple: #7b2fff;
+      --green: #00ff88;
+      --text: #e8f4ff;
+      --text-dim: #6b8aad;
+      --glass: rgba(8, 16, 32, 0.55);
+      --border: rgba(0, 229, 255, 0.2);
+    }
+    html, body {
+      font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif;
+      background: #02050c; color: var(--text);
+      min-height: 100vh; overflow-x: hidden;
+    }
+    #bg-canvas { position: fixed; inset: 0; z-index: 0; }
+
+    /* 入场动画蒙层 */
+    #intro-overlay {
+      position: fixed; inset: 0; z-index: 9999;
+      background: #02050c;
+      display: flex; align-items: center; justify-content: center;
+      flex-direction: column;
+      transition: opacity 1.2s ease, visibility 1.2s ease;
+    }
+    #intro-overlay.hide { opacity: 0; visibility: hidden; }
+    .intro-ring {
+      width: 200px; height: 200px; border-radius: 50%;
+      border: 2px solid transparent;
+      border-top-color: var(--cyan);
+      border-right-color: var(--blue);
+      animation: spin 1.2s linear infinite;
+      position: relative;
+    }
+    .intro-ring::before {
+      content: ""; position: absolute; inset: 15px; border-radius: 50%;
+      border: 2px solid transparent;
+      border-top-color: var(--green);
+      border-left-color: var(--purple);
+      animation: spin 0.8s linear infinite reverse;
+    }
+    .intro-ring::after {
+      content: ""; position: absolute; inset: 35px; border-radius: 50%;
+      border: 2px solid transparent;
+      border-bottom-color: var(--cyan);
+      animation: spin 1.5s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .intro-text {
+      margin-top: 40px; font-size: 14px; letter-spacing: 8px;
+      color: var(--cyan); text-transform: uppercase;
+      animation: pulse 1.5s ease-in-out infinite;
+    }
+    @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.4; } }
+
+    /* 顶部导航 */
+    .nav {
+      position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 16px 28px;
+      background: linear-gradient(180deg, rgba(2,5,12,0.9), rgba(2,5,12,0));
+      backdrop-filter: blur(8px);
+    }
+    .logo { display: flex; align-items: center; gap: 12px; }
+    .logo-mark {
+      width: 36px; height: 36px; border-radius: 8px;
+      background: linear-gradient(135deg, var(--cyan), var(--blue));
+      display: flex; align-items: center; justify-content: center;
+      font-size: 16px; font-weight: 900; color: #02050c;
+      box-shadow: 0 0 20px rgba(0, 229, 255, 0.4);
+    }
+    .logo-text { font-size: 15px; font-weight: 800; letter-spacing: 3px; color: var(--cyan); }
+    .nav-links { display: flex; gap: 4px; flex-wrap: wrap; }
+    .nav-links a {
+      color: var(--text-dim); text-decoration: none; font-size: 12px;
+      padding: 6px 14px; border-radius: 6px; transition: all 0.3s;
+      border: 1px solid transparent;
+    }
+    .nav-links a:hover { color: var(--cyan); border-color: var(--border); background: rgba(0,229,255,0.05); }
+    .nav-links a.active { color: var(--cyan); border-color: rgba(0,229,255,0.3); background: rgba(0,229,255,0.08); }
+
+    /* 首屏 Hero */
+    .hero {
+      position: relative; z-index: 10;
+      height: 100vh; min-height: 600px;
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      text-align: center; padding: 0 20px;
+    }
+    .hero-tag {
+      display: inline-flex; align-items: center; gap: 8px;
+      padding: 6px 20px; border-radius: 999px;
+      border: 1px solid var(--border);
+      background: rgba(0, 229, 255, 0.05);
+      font-size: 11px; letter-spacing: 4px;
+      color: var(--cyan); margin-bottom: 28px;
+      opacity: 0; transform: translateY(20px);
+      animation: fadeUp 0.8s 0.3s forwards;
+    }
+    .hero-tag .dot {
+      width: 6px; height: 6px; border-radius: 50%;
+      background: var(--green); box-shadow: 0 0 8px var(--green);
+    }
+    .hero-title {
+      font-size: clamp(36px, 7vw, 72px); font-weight: 900;
+      line-height: 1.1; margin-bottom: 20px;
+      opacity: 0; transform: translateY(30px);
+      animation: fadeUp 1s 0.6s forwards;
+    }
+    .hero-title .line1 {
+      background: linear-gradient(135deg, #fff, var(--cyan));
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+      display: block;
+    }
+    .hero-title .line2 {
+      background: linear-gradient(135deg, var(--blue), var(--purple));
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+      display: block;
+    }
+    .hero-sub {
+      font-size: clamp(14px, 2vw, 18px); color: var(--text-dim);
+      max-width: 600px; line-height: 1.8;
+      opacity: 0; transform: translateY(30px);
+      animation: fadeUp 1s 0.9s forwards;
+    }
+    @keyframes fadeUp {
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .hero-stats {
+      display: flex; gap: 40px; margin-top: 50px; flex-wrap: wrap; justify-content: center;
+      opacity: 0; transform: translateY(30px);
+      animation: fadeUp 1s 1.2s forwards;
+    }
+    .hstat { text-align: center; }
+    .hstat .num {
+      font-size: 32px; font-weight: 900; font-family: monospace;
+      background: linear-gradient(135deg, var(--cyan), var(--green));
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+    }
+    .hstat .label { font-size: 11px; color: var(--text-dim); letter-spacing: 2px; margin-top: 4px; }
+
+    .hero-cta {
+      margin-top: 40px; display: flex; gap: 16px; flex-wrap: wrap; justify-content: center;
+      opacity: 0; transform: translateY(30px);
+      animation: fadeUp 1s 1.5s forwards;
+    }
+    .btn {
+      padding: 14px 28px; border-radius: 10px; font-size: 14px; font-weight: 700;
+      text-decoration: none; border: none; cursor: pointer; transition: all 0.3s;
+      display: inline-flex; align-items: center; gap: 8px;
+    }
+    .btn-primary {
+      background: linear-gradient(135deg, var(--cyan), var(--blue));
+      color: #02050c; box-shadow: 0 4px 30px rgba(0, 229, 255, 0.35);
+    }
+    .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 8px 40px rgba(0, 229, 255, 0.5); }
+    .btn-glass {
+      background: rgba(0, 229, 255, 0.06);
+      color: var(--cyan);
+      border: 1px solid var(--border);
+    }
+    .btn-glass:hover { background: rgba(0, 229, 255, 0.12); border-color: var(--cyan); }
+
+    .scroll-hint {
+      position: absolute; bottom: 30px; left: 50%; transform: translateX(-50%);
+      color: var(--text-dim); font-size: 11px; letter-spacing: 2px;
+      animation: bounce 2s ease-in-out infinite;
+    }
+    .scroll-hint::after {
+      content: ""; display: block; width: 1px; height: 40px; margin: 8px auto 0;
+      background: linear-gradient(180deg, var(--cyan), transparent);
+    }
+    @keyframes bounce {
+      0%, 100% { transform: translateX(-50%) translateY(0); opacity: 1; }
+      50% { transform: translateX(-50%) translateY(8px); opacity: 0.5; }
+    }
+
+    /* 内容区 */
+    .section {
+      position: relative; z-index: 10;
+      padding: 100px 28px;
+      max-width: 1200px; margin: 0 auto;
+    }
+    .section-head { text-align: center; margin-bottom: 60px; }
+    .section-tag {
+      display: inline-block; font-size: 11px; letter-spacing: 4px;
+      color: var(--cyan); margin-bottom: 12px;
+    }
+    .section-title {
+      font-size: clamp(26px, 4vw, 40px); font-weight: 900;
+      background: linear-gradient(135deg, #fff, var(--cyan));
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+    }
+    .section-desc {
+      color: var(--text-dim); font-size: 14px; margin-top: 12px; max-width: 600px; margin-left: auto; margin-right: auto;
+    }
+
+    /* 技术卡片 */
+    .tech-grid {
+      display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px;
+    }
+    @media (max-width: 800px) { .tech-grid { grid-template-columns: 1fr; } }
+    .tech-card {
+      background: var(--glass); backdrop-filter: blur(16px);
+      border: 1px solid var(--border); border-radius: 16px;
+      padding: 30px; transition: all 0.4s;
+      position: relative; overflow: hidden;
+    }
+    .tech-card:hover {
+      transform: translateY(-6px);
+      border-color: rgba(0, 229, 255, 0.5);
+      box-shadow: 0 20px 60px rgba(0, 102, 255, 0.15);
+    }
+    .tech-card::before {
+      content: ""; position: absolute; top: 0; left: 0; right: 0; height: 2px;
+      background: linear-gradient(90deg, transparent, var(--cyan), var(--blue), transparent);
+      opacity: 0; transition: opacity 0.4s;
+    }
+    .tech-card:hover::before { opacity: 1; }
+    .tech-icon {
+      width: 56px; height: 56px; border-radius: 14px;
+      background: linear-gradient(135deg, rgba(0,229,255,0.15), rgba(0,102,255,0.1));
+      border: 1px solid rgba(0, 229, 255, 0.25);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 26px; margin-bottom: 18px;
+    }
+    .tech-card h3 { font-size: 18px; margin-bottom: 10px; color: var(--text); }
+    .tech-card p { font-size: 13px; color: var(--text-dim); line-height: 1.7; }
+    .tech-card .link {
+      display: inline-block; margin-top: 16px; font-size: 12px;
+      color: var(--cyan); text-decoration: none; font-weight: 600;
+    }
+    .tech-card .link:hover { text-decoration: underline; }
+
+    /* 链可视化 */
+    .chain-visual {
+      display: flex; align-items: center; justify-content: center;
+      gap: 0; margin: 50px 0; flex-wrap: wrap;
+    }
+    .block-node {
+      width: 130px; height: 130px; border-radius: 14px;
+      background: linear-gradient(135deg, rgba(0,229,255,0.1), rgba(0,102,255,0.05));
+      border: 1px solid var(--border);
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      position: relative; flex-shrink: 0;
+      transition: all 0.3s;
+    }
+    .block-node:hover {
+      border-color: var(--cyan);
+      box-shadow: 0 0 30px rgba(0, 229, 255, 0.3);
+      transform: scale(1.05);
+    }
+    .block-node .bh { font-size: 11px; color: var(--text-dim); margin-bottom: 6px; }
+    .block-node .bhash { font-family: monospace; font-size: 11px; color: var(--cyan); word-break: break-all; text-align: center; padding: 0 8px; }
+    .block-node .btime { font-size: 10px; color: var(--text-dim); margin-top: 6px; }
+    .block-link {
+      width: 40px; height: 2px; flex-shrink: 0;
+      background: linear-gradient(90deg, var(--cyan), var(--blue));
+      position: relative;
+    }
+    .block-link::after {
+      content: ""; position: absolute; right: -4px; top: -3px;
+      width: 8px; height: 8px; border-radius: 50%;
+      background: var(--cyan); box-shadow: 0 0 10px var(--cyan);
+    }
+
+    .footer {
+      padding: 40px 28px; text-align: center;
+      color: var(--text-dim); font-size: 11px;
+      border-top: 1px solid var(--border);
+      position: relative; z-index: 10;
+    }
+    .footer a { color: var(--cyan); text-decoration: none; }
+  </style>
+</head>
+<body>
+  <!-- 入场蒙层 -->
+  <div id="intro-overlay">
+    <div class="intro-ring"></div>
+    <div class="intro-text">INITIALIZING BLOCKCHAIN</div>
+  </div>
+
+  <canvas id="bg-canvas"></canvas>
+
+  <nav class="nav">
+    <div class="logo">
+      <div class="logo-mark">B</div>
+      <span class="logo-text">BLOCKCHAIN</span>
+    </div>
+    <div class="nav-links">
+      <a href="./index.html" class="active">首页</a>
+      <a href="./blocks.html">区块</a>
+      <a href="./hash.html">哈希</a>
+      <a href="./consensus.html">共识</a>
+      <a href="../scifi/index.html">溯源版 ↗</a>
+    </div>
+  </nav>
+
+  <!-- Hero -->
+  <section class="hero">
+    <div class="hero-tag"><span class="dot"></span>FISCO BCOS 联盟链 · 实时数据</div>
+    <h1 class="hero-title">
+      <span class="line1">区块链接入真实世界</span>
+      <span class="line2">BLOCKCHAIN SHOWCASE</span>
+    </h1>
+    <p class="hero-sub">
+      沉浸式体验区块链核心技术 —— 分布式账本、哈希加密、共识机制、智能合约。
+      <br>所有数据来自真实链上，所见即所得。
+    </p>
+    <div class="hero-stats">
+      <div class="hstat"><div class="num" id="statBlock">2</div><div class="label">区块高度</div></div>
+      <div class="hstat"><div class="num">4</div><div class="label">共识节点</div></div>
+      <div class="hstat"><div class="num">PBFT</div><div class="label">共识算法</div></div>
+      <div class="hstat"><div class="num">SM3</div><div class="label">国密哈希</div></div>
+    </div>
+    <div class="hero-cta">
+      <a href="./blocks.html" class="btn btn-primary">探索链上数据 →</a>
+      <a href="./consensus.html" class="btn btn-glass">共识机制演示</a>
+    </div>
+    <div class="scroll-hint">SCROLL DOWN</div>
+  </section>
+
+  <!-- 核心技术 -->
+  <section class="section">
+    <div class="section-head">
+      <div class="section-tag">// CORE TECHNOLOGY</div>
+      <h2 class="section-title">四大核心技术</h2>
+      <p class="section-desc">区块链不是单一技术，而是密码学、分布式系统、博弈论的综合应用</p>
+    </div>
+    <div class="tech-grid">
+      <div class="tech-card">
+        <div class="tech-icon">🔗</div>
+        <h3>链式数据结构</h3>
+        <p>每个区块包含前一个区块的哈希，形成不可篡改的链条。修改任何一个区块都会导致后续所有区块的哈希失效。</p>
+        <a href="./blocks.html" class="link">查看区块浏览器 →</a>
+      </div>
+      <div class="tech-card">
+        <div class="tech-icon">#️⃣</div>
+        <h3>密码学哈希</h3>
+        <p>SHA-256 与国密 SM3 双哈希算法，将任意长度的数据映射为固定长度的"数字指纹"，具有单向性和抗碰撞性。</p>
+        <a href="./hash.html" class="link">进入哈希实验室 →</a>
+      </div>
+      <div class="tech-card">
+        <div class="tech-icon">🤝</div>
+        <h3>分布式共识</h3>
+        <p>PBFT 拜占庭容错共识算法，在不可信网络中让多个节点就数据状态达成一致，最多容忍 (n-1)/3 个恶意节点。</p>
+        <a href="./consensus.html" class="link">观看共识演示 →</a>
+      </div>
+      <div class="tech-card">
+        <div class="tech-icon">📜</div>
+        <h3>智能合约</h3>
+        <p>运行在区块链上的自动化代码，一旦部署不可篡改，按照预设逻辑自动执行，确保结果可验证、可追溯。</p>
+        <a href="../scifi/certificate.html" class="link">查看存证合约 →</a>
+      </div>
+      <div class="tech-card">
+        <div class="tech-icon">🔐</div>
+        <h3>数字签名</h3>
+        <p>基于椭圆曲线的非对称加密，用私钥签名、公钥验签，确保数据的身份认证和不可否认性。</p>
+        <a href="./hash.html#signature" class="link">了解签名机制 →</a>
+      </div>
+      <div class="tech-card">
+        <div class="tech-icon">🌐</div>
+        <h3>国密合规</h3>
+        <p>原生支持 SM2 签名、SM3 哈希、SM4 加密三大国密算法，符合国内密码管理政策和等保要求。</p>
+        <a href="./hash.html#sm3" class="link">SM3 算法演示 →</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- 链可视化 -->
+  <section class="section">
+    <div class="section-head">
+      <div class="section-tag">// CHAIN VISUALIZATION</div>
+      <h2 class="section-title">区块链结构可视化</h2>
+      <p class="section-desc">每个区块通过哈希指向前一个区块，形成一条不可篡改的链</p>
+    </div>
+    <div class="chain-visual" id="chainVisual">
+      <!-- 动态生成 -->
+    </div>
+  </section>
+
+  <footer class="footer">
+    <p>BLOCKCHAIN SHOWCASE · 区块链技术沉浸展示</p>
+    <p style="margin-top:8px;">
+      <a href="../index.html">标准版</a> ·
+      <a href="../tech/index.html">科技版</a> ·
+      <a href="../scifi/index.html">科幻版</a> ·
+      <a href="../depin/index.html">DePIN版</a>
+    </p>
+  </footer>
+
+  <script src="https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js"></script>
+  <script>
+    // 入场动画
+    window.addEventListener('load', () => {
+      setTimeout(() => {
+        document.getElementById('intro-overlay').classList.add('hide');
+      }, 1800);
+    });
+
+    // ============================================================
+    // Three.js 背景 - 粒子 + 浮动几何体
+    // ============================================================
+    const canvas = document.getElementById('bg-canvas');
+    const scene = new THREE.Scene();
+    const camera = new THREE.PerspectiveCamera(70, innerWidth / innerHeight, 0.1, 100);
+    camera.position.z = 15;
+
+    const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
+    renderer.setPixelRatio(Math.min(devicePixelRatio, 1.5));
+    renderer.setSize(innerWidth, innerHeight);
+
+    // 粒子星空
+    const starsGeo = new THREE.BufferGeometry();
+    const starCount = 1500;
+    const starPos = new Float32Array(starCount * 3);
+    const starCol = new Float32Array(starCount * 3);
+    for (let i = 0; i < starCount; i++) {
+      starPos[i*3] = (Math.random() - 0.5) * 60;
+      starPos[i*3+1] = (Math.random() - 0.5) * 40;
+      starPos[i*3+2] = (Math.random() - 0.5) * 30 - 10;
+      const r = Math.random();
+      if (r < 0.6) { starCol[i*3]=0.4; starCol[i*3+1]=0.6; starCol[i*3+2]=1; }
+      else if (r < 0.85) { starCol[i*3]=0; starCol[i*3+1]=0.9; starCol[i*3+2]=1; }
+      else { starCol[i*3]=0; starCol[i*3+1]=0.5; starCol[i*3+2]=1; }
+    }
+    starsGeo.setAttribute('position', new THREE.BufferAttribute(starPos, 3));
+    starsGeo.setAttribute('color', new THREE.BufferAttribute(starCol, 3));
+    const starsMat = new THREE.PointsMaterial({ size: 0.05, vertexColors: true, transparent: true, opacity: 0.7 });
+    const stars = new THREE.Points(starsGeo, starsMat);
+    scene.add(stars);
+
+    // 浮动的立方体/八面体（代表区块）
+    const floaters = [];
+    const shapes = [new THREE.IcosahedronGeometry(0.6, 0), new THREE.OctahedronGeometry(0.5, 0), new THREE.TetrahedronGeometry(0.6, 0)];
+    for (let i = 0; i < 12; i++) {
+      const geo = shapes[Math.floor(Math.random() * shapes.length)];
+      const mat = new THREE.MeshBasicMaterial({
+        color: new THREE.Color().setHSL(0.55 + Math.random() * 0.15, 1, 0.6),
+        wireframe: true,
+        transparent: true,
+        opacity: 0.25
+      });
+      const mesh = new THREE.Mesh(geo, mat);
+      mesh.position.set(
+        (Math.random() - 0.5) * 30,
+        (Math.random() - 0.5) * 20,
+        (Math.random() - 0.5) * 10 - 5
+      );
+      mesh.userData = {
+        rx: (Math.random() - 0.5) * 0.01,
+        ry: (Math.random() - 0.5) * 0.015,
+        floatSpeed: 0.3 + Math.random() * 0.5,
+        floatOffset: Math.random() * Math.PI * 2,
+        baseY: mesh.position.y
+      };
+      scene.add(mesh);
+      floaters.push(mesh);
+    }
+
+    // 大圆环装饰
+    const ringGeo = new THREE.TorusGeometry(8, 0.02, 8, 100);
+    const ringMat = new THREE.MeshBasicMaterial({ color: 0x00e5ff, transparent: true, opacity: 0.15 });
+    const ring1 = new THREE.Mesh(ringGeo, ringMat);
+    ring1.rotation.x = Math.PI / 2.5;
+    scene.add(ring1);
+    const ring2 = new THREE.Mesh(ringGeo.clone(), ringMat.clone());
+    ring2.material.color.setHex(0x0066ff);
+    ring2.scale.set(1.3, 1.3, 1.3);
+    ring2.rotation.x = -Math.PI / 3;
+    ring2.rotation.y = Math.PI / 4;
+    scene.add(ring2);
+
+    // 鼠标交互
+    let mx = 0, my = 0, tx = 0, ty = 0;
+    document.addEventListener('mousemove', e => {
+      mx = (e.clientX / innerWidth - 0.5) * 2;
+      my = (e.clientY / innerHeight - 0.5) * 2;
+    });
+    document.addEventListener('touchmove', e => {
+      mx = (e.touches[0].clientX / innerWidth - 0.5) * 2;
+      my = (e.touches[0].clientY / innerHeight - 0.5) * 2;
+    });
+
+    let t = 0;
+    function animate() {
+      requestAnimationFrame(animate);
+      t += 0.008;
+
+      tx += (mx - tx) * 0.03;
+      ty += (my - ty) * 0.03;
+
+      camera.position.x = tx * 2;
+      camera.position.y = -ty * 1.5;
+      camera.lookAt(0, 0, 0);
+
+      stars.rotation.y += 0.0005;
+      ring1.rotation.z += 0.002;
+      ring2.rotation.z -= 0.0015;
+
+      floaters.forEach(f => {
+        f.rotation.x += f.userData.rx;
+        f.rotation.y += f.userData.ry;
+        f.position.y = f.userData.baseY + Math.sin(t * f.userData.floatSpeed + f.userData.floatOffset) * 1.5;
+      });
+
+      renderer.render(scene, camera);
+    }
+    animate();
+
+    addEventListener('resize', () => {
+      camera.aspect = innerWidth / innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(innerWidth, innerHeight);
+    });
+
+    // ============================================================
+    // 区块链可视化
+    // ============================================================
+    const blocks = [
+      { height: 0, hash: '0x0000...0000', time: '创世区块', genesis: true },
+      { height: 1, hash: '0x7f8a...3b2c', time: '2026-09-20 12:38' },
+      { height: 2, hash: '0x5939...1a12', time: '2026-09-20 12:39' },
+    ];
+
+    const chainVisual = document.getElementById('chainVisual');
+    blocks.forEach((b, i) => {
+      const node = document.createElement('div');
+      node.className = 'block-node';
+      if (b.genesis) node.style.borderColor = 'rgba(0, 255, 136, 0.4)';
+      node.innerHTML = `
+        <div class="bh">#${b.height}</div>
+        <div class="bhash">${b.hash}</div>
+        <div class="btime">${b.time}</div>
+      `;
+      chainVisual.appendChild(node);
+      if (i < blocks.length - 1) {
+        const link = document.createElement('div');
+        link.className = 'block-link';
+        chainVisual.appendChild(link);
+      }
+    });
+  </script>
+</body>
+</html>
